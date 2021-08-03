@@ -40,6 +40,6 @@ mp4 <- colMeans(alunos[,c(2:5)])[[4]]
 
 ## Você deve salvar nas variáveis d1, dp2, dp3 e dp4 o desvio padrão das notas das provas 1, 2, 3 e 4, respectivamente.
 dp1 <- sd(alunos[,2])
-dp2 <- sd(alunos[,2])
-dp3 <- sd(alunos[,2])
-dp4 <- sd(alunos[,2])
+dp2 <- sd(alunos[,3])
+dp3 <- sd(alunos[,4])
+dp4 <- sd(alunos[,5])
