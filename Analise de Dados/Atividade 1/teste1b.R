@@ -32,10 +32,10 @@ medquad <- sqrt((rowSums(alunos[,c(2:5)]**2) - rowMins(alunos[,c(2:5)]**2))/3)
 
 
 ## Você deve salvar nas variáveis mp1, mp2, mp3 e mp4 a média aritmética das notas das provas 1, 2, 3 e 4, respectivamente.
-mp1 <- colMeans(alunos[,c(2:5)])[1]
-mp2 <- colMeans(alunos[,c(2:5)])[2]
-mp3 <- colMeans(alunos[,c(2:5)])[3]
-mp4 <- colMeans(alunos[,c(2:5)])[4]
+mp1 <- colMeans(alunos[,c(2:5)])[[1]]
+mp2 <- colMeans(alunos[,c(2:5)])[[2]]
+mp3 <- colMeans(alunos[,c(2:5)])[[3]]
+mp4 <- colMeans(alunos[,c(2:5)])[[4]]
 
 
 ## Você deve salvar nas variáveis d1, dp2, dp3 e dp4 o desvio padrão das notas das provas 1, 2, 3 e 4, respectivamente.

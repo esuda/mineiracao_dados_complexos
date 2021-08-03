@@ -25,5 +25,5 @@ intersect(intersect(C, V),L)
 
 ## Se a filial de Limeira parar a distribuicao de produtos, a filial de Campinas 
 ## possui todos os itens necessarios para atender a demanda de Limeira? 
-length(intersect(C, L)) == length(L)
-
+sort(intersect(C, L)) == sort(L)
+# Sim pois a interseccao de C com L retorna o conjunto L, logo L esta contido em C
