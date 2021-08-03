@@ -24,22 +24,22 @@ rowMins <- function(m) {
 
 ## Perguntas:
 ## Você deve criar, na variável alunos, um data frame utilizando os vetores fornecidos. Além disso, sempre que utilizar algum dado já existente no arquivo, você deve referir-se a esse data frame (ou seja, você só pode utilizar os vetores fornecidos para criar esse data frame).
-alunos <-
+alunos <-data.frame(ids, p1, p2, p3, p4)
 
 
 ## Você deve salvar no vetor medquad a média final de cada aluno (média quadrática das provas, desconsiderando a menor nota obtida), com duas casas decimais.
-medquad <-
+medquad <- sqrt((rowSums(alunos[,c(2:5)]**2) - rowMins(alunos[,c(2:5)]**2))/3)
 
 
 ## Você deve salvar nas variáveis mp1, mp2, mp3 e mp4 a média aritmética das notas das provas 1, 2, 3 e 4, respectivamente.
-mp1 <-
-mp2 <-
-mp3 <-
-mp4 <-
+mp1 <- colMeans(alunos[,c(2:5)])[1]
+mp2 <- colMeans(alunos[,c(2:5)])[2]
+mp3 <- colMeans(alunos[,c(2:5)])[3]
+mp4 <- colMeans(alunos[,c(2:5)])[4]
 
 
 ## Você deve salvar nas variáveis d1, dp2, dp3 e dp4 o desvio padrão das notas das provas 1, 2, 3 e 4, respectivamente.
-dp1 <-
-dp2 <-
-dp3 <-
-dp4 <-
+dp1 <- sd(alunos[,2])
+dp2 <- sd(alunos[,2])
+dp3 <- sd(alunos[,2])
+dp4 <- sd(alunos[,2])

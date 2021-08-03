@@ -12,10 +12,10 @@ V <- c("Sabonete", "Detergente", "Refrigerante", "Carne", "Vinho", "Chocolate", 
 
 ## Perguntas:
 ## Quais os produtos que sao vendidos em Campinas, mas nao sao vendidos em Limeira?
-setdiff(C, intersect(C,L))
+setdiff(C,L)
 
 ## Quais os produtos que sao vendidos em Vinhedo, mas nao sao vendidos em Campinas?
-setdiff(V, intersect(C,V))
+setdiff(V,C)
 
 ## Quais os produtos que sao vendidos em pelo menos uma cidade?
 unique(union(union(C,L), V))
