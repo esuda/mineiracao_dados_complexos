@@ -43,14 +43,14 @@ source("./trabalho1_base.R", encoding = "UTF-8")
 docs <- process_data("time.txt", "XX-Text [[:alnum:]]", "Article_0", 
                      convertcase = TRUE, remove_stopwords = FALSE)
 # Visualizando os documentos (apenas para debuging)
-head(docs)
+# head(docs)
 
 # Lendo uma lista de consultas (não mude essa linha)
 queries <- process_data("queries.txt", "XX-Find [[:alnum:]]", 
                         "Query_0", convertcase = TRUE, 
                         remove_stopwords = FALSE)
 # Visualizando as consultas (apenas para debuging)
-head(queries)
+# head(queries)
 # Exemplo de acesso aos tokens de uma consulta
 q1 <- queries[queries$doc_id == "Query_01",]; q1
 
@@ -58,12 +58,12 @@ q1 <- queries[queries$doc_id == "Query_01",]; q1
 ground_truths <- read.csv("relevance.csv", header = TRUE)
 
 # Visualizando os ground_truths (apenas para debuging)
-head(ground_truths)
+# head(ground_truths)
 # Exemplo de acesso vetor de ground_truth da consulta 1:
-ground_truths[1,]
+#ground_truths[1,]
 # Exemplo de impressão dos ids dos documentos relevantes da consulta 1:
 # Visualizando o ranking (apenas para debuging)
-names(ground_truths)[ground_truths[1,]==1]
+# names(ground_truths)[ground_truths[1,]==1]
 
 
 # Computando a matriz de termo-documento
@@ -103,21 +103,37 @@ computa_resultados <- function(query, ground_truth, stats, stat_name,
 
   # Calculando a revocação
   r <- recall(ground_truth, ranking$doc_id, top) 
-  
-  # Avaliacao entre os rankings
-  f1 <- f1_score(ground_truth, ranking$doc_id, top)
-  avgp <- ap(ground_truth, ranking$doc_id,top)
-  # mavg<- map(gtruths_rankings, k)
 
   # Imprimindo os valores de precisão e revocação
   cat(paste("Consulta: ", query[1,1], 
             "\nPrecisão: ", p, 
-            "\tRevocação: ", r,
-            "\nF1: ", f1,
-            "\nPrecisao media: ", avgp))
+            "\tRevocação: ", r))
   
   # Gerando o plot Precisão + Revocação (função do arquivo base)
   plot_prec_e_rev(ranking$doc_id, ground_truth, top, text)
+}
+
+metricas <- function(query, ground_truth, stats, stat_name, top) {
+  # Criando ranking (função do arquivo base)
+  ranking <- get_ranking_by_stats(stat_name, stats, query$word)
+  
+  # Calculando a precisão
+  p <- precision(ground_truth, ranking$doc_id, top)
+  
+  # Calculando a revocação
+  r <- recall(ground_truth, ranking$doc_id, top) 
+  
+  # Avaliacao entre os rankings
+  f1 <- f1_score(ground_truth, ranking$doc_id, top)
+  avgp <- ap(ground_truth, ranking$doc_id,top)
+  
+  # Imprimindo os valores de precisão e revocação
+  cat(paste("Consulta: ", query[1,1],
+            "\nMetodologia: ", stat_name,
+            "\nPrecisão: ", p, 
+            "\nRevocação: ", r,
+            "\nF1: ", f1,
+            "\nPrecisao media: ", avgp))
   
   return(ranking)
 }
@@ -132,12 +148,12 @@ n_consulta1 <- 1
 #                    top = 15, "titulo")
 
 # Resultados para a consulta 1 e tf_idf
-rank_tf1 <- computa_resultados(query=consulta1, ground_truth=ground_truths[n_consulta1, ], 
+computa_resultados(query=consulta1, ground_truth=ground_truths[n_consulta1, ], 
                    stats=docs_stats, stat_name="tf_idf", 
-                   top=100, text="- Consulta 1 TF-IDF")
+                   top=20, text="- Consulta 1 TF-IDF")
 
 # Resultados para a consulta 1 e bm25
-rank_bm1 <- computa_resultados(query=consulta1, ground_truth=ground_truths[n_consulta1, ], 
+computa_resultados(query=consulta1, ground_truth=ground_truths[n_consulta1, ], 
                    stats=docs_stats, stat_name="bm25", 
                    top=20, text="- Consulta 1 BM25")
 
@@ -147,39 +163,56 @@ consulta2 <- queries[queries$doc_id == "Query_020",]
 n_consulta2 <- 20
 
 # Resultados para a consulta 2 e tf_idf
-rank_tf2 <- computa_resultados(query=consulta2, ground_truth=ground_truths[n_consulta2, ], 
+computa_resultados(query=consulta2, ground_truth=ground_truths[n_consulta2, ], 
                    stats=docs_stats, stat_name="tf_idf", 
                    top=20, text="- Consulta 20 TF-IDF")
-plot_prec_e_rev(rank_tf2$doc_id, ground_truths[n_consulta2, ], 20, "- Consulta 20 TF-IDF")
+
 
 # Resultados para a consulta 2 e bm25
-rank_bm2 <- computa_resultados(query=consulta2, ground_truth=ground_truths[n_consulta2, ], 
+computa_resultados(query=consulta2, ground_truth=ground_truths[n_consulta2, ], 
                    stats=docs_stats, stat_name="bm25", 
                    top=20, text="- Consulta 20 BM25")
-plot_prec_e_rev(rank_bm2$doc_id, ground_truths[n_consulta2, ], 20, "- Consulta 20 BM25")
+
 
 # Resultado das Media das Precisoes medias
-map(list(list(ground_truths[n_consulta1, ] , rank_tf1$doc_id), list(ground_truths[n_consulta2, ] , rank_tf2$doc_id)), 20)
-map(list(list(ground_truths[n_consulta1, ] , rank_bm1$doc_id), list(ground_truths[n_consulta2, ] , rank_bm2$doc_id)), 20)
+q1_tfidf <- metricas(query=consulta1, ground_truth=ground_truths[n_consulta1, ], 
+                    stats=docs_stats, stat_name="tf_idf", top=20)
+q1_bm25 <- metricas(query=consulta1, ground_truth=ground_truths[n_consulta1, ], 
+                    stats=docs_stats, stat_name="bm25", top=20)
 
-#mrr(ground_truths[n_consulta1, ] , list(rank_tf1$doc_id, rank_tf2$doc_id))
-#mrr(ground_truths[n_consulta1, ] , list(rank_bm1$doc_id, rank_bm2$doc_id))
 
+q2_tfidf <- metricas(query=consulta2, ground_truth=ground_truths[n_consulta2, ], 
+                     stats=docs_stats, stat_name="tf_idf", top=20)
+q2_bm25 <- metricas(query=consulta2, ground_truth=ground_truths[n_consulta2, ], 
+                    stats=docs_stats, stat_name="bm25", top=20)
+
+# Avaliacao entre as metodologias de consulta tfidf vs bm25
+avg_precision_tfid <- map(list(list(ground_truths[n_consulta1, ] , q1_tfidf$doc_id), list(ground_truths[n_consulta2, ] , q2_tfidf$doc_id)), 20)
+avg_precision_bm25 <- map(list(list(ground_truths[n_consulta1, ] , q1_bm25$doc_id), list(ground_truths[n_consulta2, ] , q2_bm25$doc_id)), 20)
+print(cat(paste("Precisao media tfidf: ",avg_precision_tfid,
+                "\nPrecisao media bm25: ", avg_precision_bm25)))
 
 ######################################################################
 #
 # Questão 2 - Escreva sua análise abaixo
 #
 ######################################################################
-# Para a Consulta 1, pela precisao media conseguimos ver que o metodo bm25 
-# apresenta um valor maior (~24p.p) quando comparado ao tf-idf.
 
-# Para a consulta 20, apenas a observacao visual da precisao e revocacao
-# podemos observar que o metodo bm25 retorna um resultado melhor que o tf-idf
-# (~39p.p de diferenca de precisao media)
+# Consulta 1 - Query 01:
+# Como os metodos TF-IDF e BM25 tem precisao e a revocacao iguais (p=0.35, r=1)
+#devemos observar a metrica de precisao media. Neste caso o metodo BM25 possui
+#approx. +24p.p (ap=0.620) quando comparado com TF-IDF (ap=0.856). Logo para esta
+#consulta o metodo BM25 seria o modelo ideal.
 
-# De forma geral, atraves do MAP, vemos que o metodo bm25 retorna um resultado
-# melhor que o do tf-idf (~31p.p)
+# Consulta 2 - Query 20:
+# A observacao dos graficos entre as metodologias claramente que o metodo BM25
+#retorna um resultado melhor que o do TF-IDF pois recupera todos os arquivos de
+#em um k muito mais baixo. Alem do mais o score F1 (+9p.p) e a precisao media (+39p.p)
+
+# Observacao entre as metodologias:
+# Utilizando o MAP para as duas metodologias, TF-IDF e BM25, poemos observar que 
+#o metodo bm25 retorna um resultado melhor que o do tf-idf (+31p.p).
+
 ######################################################################
 #
 # Questão 3
@@ -216,45 +249,67 @@ docs_stats_proc <- as.data.frame(document_term_frequencies_statistics(term_freq_
 consulta1_proc <- queries_proc[queries_proc$doc_id == "Query_01",]
 n_consulta1_proc <- 1
 # Resultados para a consulta 1 e tf_idf
-rank_tf1 <- computa_resultados(query=consulta1_proc, ground_truth=ground_truths[n_consulta1_proc, ], 
+computa_resultados(query=consulta1_proc, ground_truth=ground_truths[n_consulta1_proc, ], 
                    stats=docs_stats_proc, stat_name="tf_idf", 
                    top=20, text="- Consulta 1 TF-IDF")
 
-plot_prec_e_rev(rank_tf1$doc_id, ground_truths[n_consulta1_proc, ], 100, "- Consulta 1 TF-IDF")
-
 # Resultados para a consulta 1 e bm25
-rank_bm1 <- computa_resultados(query=consulta1_proc, ground_truth=ground_truths[n_consulta1_proc, ], 
+computa_resultados(query=consulta1_proc, ground_truth=ground_truths[n_consulta1_proc, ], 
                    stats=docs_stats_proc, stat_name="bm25", 
                    top=20, text="- Consulta 1 BM25")
-
-plot_prec_e_rev(rank_bm1$doc_id, ground_truths[n_consulta1_proc, ], 20, "- Consulta 1 BM25")
 
 # Definindo a consulta 2 
 consulta2_proc <- queries_proc[queries_proc$doc_id == "Query_020",]
 n_consulta2_proc <- 20
 
 # Resultados para a consulta 2 e tf_idf
-rank_tf2 <- computa_resultados(query=consulta2_proc, ground_truth=ground_truths[n_consulta2_proc, ], 
+computa_resultados(query=consulta2_proc, ground_truth=ground_truths[n_consulta2_proc, ], 
                    stats=docs_stats_proc, stat_name="tf_idf", 
                    top=20, text="- Consulta 20 TF-IDF")
 
 # Resultados para a consulta 2 e bm25
-rank_bm2 <- computa_resultados(query=consulta2_proc, ground_truth=ground_truths[n_consulta2_proc, ], 
+computa_resultados(query=consulta2_proc, ground_truth=ground_truths[n_consulta2_proc, ], 
                    stats=docs_stats_proc, stat_name="bm25", 
                    top=20, text="- Consulta 20 BM25")
-plot_prec_e_rev(rank_bm2$doc_id, ground_truths[n_consulta2_proc, ], 20, "- Consulta 2 BM25")
+
+# Resultado das Media das Precisoes medias
+q1_tfidf_proc <- metricas(query=consulta1_proc, ground_truth=ground_truths[n_consulta1_proc, ], 
+                     stats=docs_stats_proc, stat_name="tf_idf", top=20)
+q1_bm25_proc <- metricas(query=consulta1_proc, ground_truth=ground_truths[n_consulta1_proc, ], 
+                    stats=docs_stats_proc, stat_name="bm25", top=20)
+
+
+q2_tfidf_proc <- metricas(query=consulta2, ground_truth=ground_truths[n_consulta2_proc, ], 
+                     stats=docs_stats_proc, stat_name="tf_idf", top=20)
+q2_bm25_proc <- metricas(query=consulta2, ground_truth=ground_truths[n_consulta2_proc, ], 
+                    stats=docs_stats_proc, stat_name="bm25", top=20)
+
+# Avaliacao entre as metodologias de consulta tfidf vs bm25
+avg_precision_tfid_proc <- map(list(list(ground_truths[n_consulta1_proc, ] , q1_tfidf_proc$doc_id), list(ground_truths[n_consulta2_proc, ] , q2_tfidf_proc$doc_id)), 20)
+avg_precision_bm25_proc <- map(list(list(ground_truths[n_consulta1_proc, ] , q1_bm25_proc$doc_id), list(ground_truths[n_consulta2_proc, ] , q2_bm25_proc$doc_id)), 20)
+print(cat(paste("Precisao media tfidf: ",avg_precision_tfid_proc,
+                "\nPrecisao media bm25: ", avg_precision_bm25_proc)))
 
 ######################################################################
 #
 # Questão 3 - Escreva sua análise abaixo
 #
 ######################################################################
-# Alterar a retirada de stop words nao altera a precisao e a revocacao para k=20
-# primeiras palavras, pois conseguimos recuperar todas as palavras alvo antes de k=20,
-# porem ao analisar a precisao media, podemos ver que retirando 
-# os stopwords a precisao media foi maior pois indica que conseguimos recuperar antes os resultados. 
-# 
+ 
+# Consulta 1 - Query 01:
+# Alterar a retirada de stop words para esta consulta tanto utilizando o modelo
+#TF-IDF ou o modelo de BM25 nao ha alteracao da precisao e da revocacao 
+#quando estamos recuperando k=20 primeiros documentos pois conseguimos uma revocacao
+#igual a 1 antes da recuperacao dos 20 primeiros elementos. Logo precisamos analisar
+#a precisao media e podemos observar que para o TF-IDF ha uma perda minima de precisao 
+#media (-2p.p), porem para o BM25 ha um aumento marginal de precisao media (+5p.p).
 
+# Consulta 2 - Query 10:
+# Semelhante ao caso da Query 01, retirar os stop words nao tem um impacto na precisao
+#e revocacao em k=20, porem, diferente da Query 1, nao chegamos em um valor de revocacao
+#igual a 1, logo ha espaco para as metodologias recuperarem mais registros relevantes
+#antes de atingir k=20. Notamos isso de forma mais pronunciada no BM25 com precisao media
+#de +22p.p e +4p.p no metodo TF_IDF.
 
 ######################################################################
 #
