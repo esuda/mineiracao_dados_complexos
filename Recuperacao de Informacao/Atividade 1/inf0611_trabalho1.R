@@ -107,6 +107,7 @@ computa_resultados <- function(query, ground_truth, stats, stat_name,
   # Avaliacao entre os rankings
   f1 <- f1_score(ground_truth, ranking$doc_id, top)
   avgp <- ap(ground_truth, ranking$doc_id,top)
+  # mavg<- map(gtruths_rankings, k)
 
   # Imprimindo os valores de precisão e revocação
   cat(paste("Consulta: ", query[1,1], 
@@ -117,11 +118,13 @@ computa_resultados <- function(query, ground_truth, stats, stat_name,
   
   # Gerando o plot Precisão + Revocação (função do arquivo base)
   plot_prec_e_rev(ranking$doc_id, ground_truth, top, text)
+  
+  return(ranking)
 }
 
 # Definindo a consulta 1 
-consulta1 <- queries[queries$doc_id == "Query_010",]
-n_consulta1 <- 10
+consulta1 <- queries[queries$doc_id == "Query_01",]
+n_consulta1 <- 1
 
 ## Exemplo de uso da função computa_resultados:
 # computa_resultados(consulta1, ground_truths[n_consulta1, ], 
@@ -129,14 +132,14 @@ n_consulta1 <- 10
 #                    top = 15, "titulo")
 
 # Resultados para a consulta 1 e tf_idf
-computa_resultados(query=consulta1, ground_truth=ground_truths[n_consulta1, ], 
+rank_tf1 <- computa_resultados(query=consulta1, ground_truth=ground_truths[n_consulta1, ], 
                    stats=docs_stats, stat_name="tf_idf", 
-                   top=15, text="- Consulta 10 TF-IDF")
+                   top=100, text="- Consulta 1 TF-IDF")
 
 # Resultados para a consulta 1 e bm25
-computa_resultados(query=consulta1, ground_truth=ground_truths[n_consulta1, ], 
+rank_bm1 <- computa_resultados(query=consulta1, ground_truth=ground_truths[n_consulta1, ], 
                    stats=docs_stats, stat_name="bm25", 
-                   top=15, text="- Consulta 10 BM25")
+                   top=20, text="- Consulta 1 BM25")
 
 
 # Definindo a consulta 2 
@@ -144,15 +147,23 @@ consulta2 <- queries[queries$doc_id == "Query_020",]
 n_consulta2 <- 20
 
 # Resultados para a consulta 2 e tf_idf
-computa_resultados(query=consulta2, ground_truth=ground_truths[n_consulta2, ], 
+rank_tf2 <- computa_resultados(query=consulta2, ground_truth=ground_truths[n_consulta2, ], 
                    stats=docs_stats, stat_name="tf_idf", 
-                   top=15, text="- Consulta 20 TF-IDF")
-
+                   top=20, text="- Consulta 20 TF-IDF")
+plot_prec_e_rev(rank_tf2$doc_id, ground_truths[n_consulta2, ], 20, "- Consulta 20 TF-IDF")
 
 # Resultados para a consulta 2 e bm25
-computa_resultados(query=consulta2, ground_truth=ground_truths[n_consulta2, ], 
+rank_bm2 <- computa_resultados(query=consulta2, ground_truth=ground_truths[n_consulta2, ], 
                    stats=docs_stats, stat_name="bm25", 
-                   top=15, text="- Consulta 20 BM25")
+                   top=20, text="- Consulta 20 BM25")
+plot_prec_e_rev(rank_bm2$doc_id, ground_truths[n_consulta2, ], 20, "- Consulta 20 BM25")
+
+# Resultado das Media das Precisoes medias
+map(list(list(ground_truths[n_consulta1, ] , rank_tf1$doc_id), list(ground_truths[n_consulta2, ] , rank_tf2$doc_id)), 20)
+map(list(list(ground_truths[n_consulta1, ] , rank_bm1$doc_id), list(ground_truths[n_consulta2, ] , rank_bm2$doc_id)), 20)
+
+#mrr(ground_truths[n_consulta1, ] , list(rank_tf1$doc_id, rank_tf2$doc_id))
+#mrr(ground_truths[n_consulta1, ] , list(rank_bm1$doc_id, rank_bm2$doc_id))
 
 
 ######################################################################
@@ -160,13 +171,15 @@ computa_resultados(query=consulta2, ground_truth=ground_truths[n_consulta2, ],
 # Questão 2 - Escreva sua análise abaixo
 #
 ######################################################################
-# Para a Consulta 10 do arquivo txt ambos os metodos bm25 e tf-idf apresentam 
-# Precisao, revocacao e F1 iguais, porem utilizando o bm25 obtemos uma precisao
-# media com aprox 1 p.p. acima, logo bm25 seria o modelo indicado.
-#
-# Para a consulta 20 do arquivo txt, visualmente observando os graficos podemos 
-# afirmar que o modelo bm25 seria o mais indicado, bem como avaliando o score f1
-# e a precisao media.
+# Para a Consulta 1, pela precisao media conseguimos ver que o metodo bm25 
+# apresenta um valor maior (~24p.p) quando comparado ao tf-idf.
+
+# Para a consulta 20, apenas a observacao visual da precisao e revocacao
+# podemos observar que o metodo bm25 retorna um resultado melhor que o tf-idf
+# (~39p.p de diferenca de precisao media)
+
+# De forma geral, atraves do MAP, vemos que o metodo bm25 retorna um resultado
+# melhor que o do tf-idf (~31p.p)
 ######################################################################
 #
 # Questão 3
@@ -182,7 +195,7 @@ docs_proc <- process_data("time.txt", "XX-Text [[:alnum:]]",
                           "Article_0", convertcase = TRUE, 
                           remove_stopwords = TRUE)
 # Visualizando os documentos (apenas para debuging)
-head(docs_proc)
+# head(docs_proc)
 
 
 # Lendo uma lista de consultas
@@ -190,7 +203,7 @@ queries_proc <- process_data("queries.txt", "XX-Find [[:alnum:]]",
                              "Query_0", convertcase = TRUE, 
                              remove_stopwords = TRUE)
 # Visualizando as consultas (apenas para debuging)
-head(queries_proc)
+# head(queries_proc)
 
 # Computando a matriz de termo-documento
 term_freq_proc <- document_term_frequencies(docs_proc, term="word")
@@ -200,42 +213,46 @@ docs_stats_proc <- as.data.frame(document_term_frequencies_statistics(term_freq_
 
 
 # Definindo a consulta 1 
-consulta1_proc <- queries_proc[queries_proc$doc_id == "Query_010",]
-n_consulta1_proc <- 10
+consulta1_proc <- queries_proc[queries_proc$doc_id == "Query_01",]
+n_consulta1_proc <- 1
 # Resultados para a consulta 1 e tf_idf
-computa_resultados(query=consulta1_proc, ground_truth=ground_truths[n_consulta1_proc, ], 
-                   stats=docs_stats, stat_name="tf_idf", 
-                   top=15, text="- Consulta 10 TF-IDF")
+rank_tf1 <- computa_resultados(query=consulta1_proc, ground_truth=ground_truths[n_consulta1_proc, ], 
+                   stats=docs_stats_proc, stat_name="tf_idf", 
+                   top=20, text="- Consulta 1 TF-IDF")
+
+plot_prec_e_rev(rank_tf1$doc_id, ground_truths[n_consulta1_proc, ], 100, "- Consulta 1 TF-IDF")
 
 # Resultados para a consulta 1 e bm25
-computa_resultados(query=consulta1_proc, ground_truth=ground_truths[n_consulta1_proc, ], 
-                   stats=docs_stats, stat_name="bm25", 
-                   top=15, text="- Consulta 10 BM25")
+rank_bm1 <- computa_resultados(query=consulta1_proc, ground_truth=ground_truths[n_consulta1_proc, ], 
+                   stats=docs_stats_proc, stat_name="bm25", 
+                   top=20, text="- Consulta 1 BM25")
 
+plot_prec_e_rev(rank_bm1$doc_id, ground_truths[n_consulta1_proc, ], 20, "- Consulta 1 BM25")
 
 # Definindo a consulta 2 
 consulta2_proc <- queries_proc[queries_proc$doc_id == "Query_020",]
 n_consulta2_proc <- 20
 
 # Resultados para a consulta 2 e tf_idf
-computa_resultados(query=consulta2_proc, ground_truth=ground_truths[n_consulta2_proc, ], 
-                   stats=docs_stats, stat_name="tf_idf", 
-                   top=15, text="- Consulta 20 TF-IDF")
+rank_tf2 <- computa_resultados(query=consulta2_proc, ground_truth=ground_truths[n_consulta2_proc, ], 
+                   stats=docs_stats_proc, stat_name="tf_idf", 
+                   top=20, text="- Consulta 20 TF-IDF")
 
 # Resultados para a consulta 2 e bm25
-computa_resultados(query=consulta2_proc, ground_truth=ground_truths[n_consulta2_proc, ], 
-                   stats=docs_stats, stat_name="bm25", 
-                   top=15, text="- Consulta 20 BM25")
-
+rank_bm2 <- computa_resultados(query=consulta2_proc, ground_truth=ground_truths[n_consulta2_proc, ], 
+                   stats=docs_stats_proc, stat_name="bm25", 
+                   top=20, text="- Consulta 20 BM25")
+plot_prec_e_rev(rank_bm2$doc_id, ground_truths[n_consulta2_proc, ], 20, "- Consulta 2 BM25")
 
 ######################################################################
 #
 # Questão 3 - Escreva sua análise abaixo
 #
 ######################################################################
-# 
-# 
-# 
+# Alterar a retirada de stop words nao altera a precisao e a revocacao para k=20
+# primeiras palavras, pois conseguimos recuperar todas as palavras alvo antes de k=20,
+# porem ao analisar a precisao media, podemos ver que retirando 
+# os stopwords a precisao media foi maior pois indica que conseguimos recuperar antes os resultados. 
 # 
 
 
