@@ -1,43 +1,39 @@
-######APÓS-REVISÃO###########
-# Usar lista abaixo para remover acentuações 
-# áàãâéèẽêíìĩîóòõôúùũûçñ
-# ÁÀÃÂÉÈẼÊÍÌĨÎÓÒÕÔÚÙŨÛÇÑ
 #####################################################
-# Mineração de Dados Complexos -- MDC 2021 
-# Recuperação de Informação
-# Implementações dos métodos de avaliação de ranking
+# Mineracao de Dados Complexos -- MDC 2021 
+# Recuperacao de Informacao
+# Implementacoes dos metodos de avaliacao de ranking
 #####################################################
 
 
 #####################################################
-# Notação comum:
+# Notacao comum:
 # 
-# gtruth - ground truth: vetor 1xn binário, 
-#     gtruth[i] = 1 indica que o i-ésimo elemento 
-#     é relevante e gtruth[i] = 0 indica que o 
-#     i-ésimo elemento NÃO é relevante 
-# relev: vetor com os graus relevâncias dos elementos 
-# ranking: vetor com índices para os elementos 
-#     ordenados, deve ser possível acessar o gtruth 
-#     e o relev com esses índices
-# k: tamanho do topo a ser considerado nos cálculos
+# gtruth - ground truth: vetor 1xn binario, 
+#     gtruth[i] = 1 indica que o i-esimo elemento 
+#     e relevante e gtruth[i] = 0 indica que o 
+#     i-esimo elemento NaO e relevante 
+# relev: vetor com os graus relevancias dos elementos 
+# ranking: vetor com indices para os elementos 
+#     ordenados, deve ser possivel acessar o gtruth 
+#     e o relev com esses indices
+# k: tamanho do topo a ser considerado nos calculos
 # r: total de elementos relevantes no topo_k
 # t: total de elementos relevantes na base
 #####################################################
 
 
 #####################################################
-# * Avaliação para relevância binária:
-#   - Precisão 
-#   - Revocação
+# * Avaliacao para relevancia binaria:
+#   - Precisao 
+#   - Revocacao
 #   - Taxa F1
-#   - Precisão Média
-#   - Média das Precisões Médias
+#   - Precisao Media
+#   - Media das Precisoes Medias
 # 
 #####################################################
 
 ######### 
-# Precisão
+# Precisao
 # (P_k = r / k)
 precision <- function(gtruth, ranking, k) {
     r <- sum(gtruth[ranking[1:k]])
@@ -45,7 +41,7 @@ precision <- function(gtruth, ranking, k) {
 }
 
 ######### 
-# Revocação
+# Revocacao
 # (R_k = r / t)
 recall <- function(gtruth, ranking, k) {
     r <- sum(gtruth[ranking[1:k]])
@@ -63,17 +59,20 @@ f1_score <- function(gtruth, ranking, k) {
 }
 
 ########## 
-# Precisão Média 
+# Precisao Media 
 # (AP_k = 1/r * sum((r_i - r_(i-1))*P_i))
 ap <- function(gtruth, ranking, k) {
     r <- sum(gtruth[ranking[1:k]])
     if (r == 0) return(0)
     
-    # índices do ranking onde um elemento relevante é
+    # indices do ranking onde um elemento relevante e
     # retornado
     k_relevant <- which(gtruth[ranking[1:k]] == 1)
 
-    # lista de precisões 
+    # lista de precisoes 
+    
+    #Pq nao jogar todas as variaveis para fora ou para dentro do moreargs?
+    
     Ps <- mapply(precision, k = k_relevant, 
                  MoreArgs = list(gtruth = gtruth, 
                                  ranking = ranking))
@@ -83,12 +82,12 @@ ap <- function(gtruth, ranking, k) {
 average_precision <- ap
 
 ########## 
-# Médias das Precisões Médias
+# Medias das Precisoes Medias
 # (MAP_k = 1/n * sum( AP_k ))
-# gtruths_rankings é uma lista de pares 
+# gtruths_rankings e uma lista de pares 
 # (ground truth, ranking)
 map <- function(gtruths_rankings, k) {
-    # aplicando a função de precisção média em 
+    # aplicando a funcao de preciscao media em 
     # cada ranking da lista
     APs <- sapply(gtruths_rankings, 
                   function(x) ap(x[[1]], x[[2]], k))
@@ -99,7 +98,7 @@ mean_average_precision <- map
 
 
 #####################################################
-# * Avaliação para relevância em níveis:
+# * Avaliacao para relevancia em niveis:
 #   - Ganho Cumulativo 
 #   - Ganho Cumulativo Descontado
 #   - Ganho Cumulativo Descontado Normalizado
@@ -132,9 +131,9 @@ ndcg <- function(relev, ranking, k) {
     
     dcg <- dcg(relev, ranking, k)
 
-    # usando a função order para obter as posições 
+    # usando a funcao order para obter as posicoes 
     # de um ranking ideal, ou seja, com os maiores 
-    # graus de relevância em ordem decrescente 
+    # graus de relevancia em ordem decrescente 
     ideal_ranking <- order(relev, decreasing=TRUE)
     idcg <- dcg(relev, ideal_ranking, k)
 
@@ -143,32 +142,32 @@ ndcg <- function(relev, ranking, k) {
 normalized_discounted_cumulative_gain <- ndcg
 
 #####################################################
-# * Avaliação entre rankings:
-#   - Média de Ranking Recíproco
-#   - Índice de Jaccard
-#   - Distância de Kendall Tau
+# * Avaliacao entre rankings:
+#   - Media de Ranking Reciproco
+#   - indice de Jaccard
+#   - Distancia de Kendall Tau
 # 
 ###########
 
 ########## 
-# Média de Ranking Recíproco
+# Media de Ranking Reciproco
 # (MRR = 1 / n * sum ( 1 / pos_i))
 mrr <- function(gtruth, rankings) { 
-    # retorna a posição da primeira ocorrência do 
-    # valor máximo da lista, no caso do ground truth
-    # o valor máximo é 1
+    # retorna a posicao da primeira ocorrencia do 
+    # valor maximo da lista, no caso do ground truth
+    # o valor maximo e 1
     pos_i <- function(ranking) {
         which.max(gtruth[ranking])
     }
-    # aplicando a função pos_i em cada ranking
+    # aplicando a funcao pos_i em cada ranking
     rr <- mapply(pos_i, rankings)
     return(mean(1/rr))
 }
 mean_reciprocal_ranking <- mrr
 
 ########## 
-# Índice de Jaccard 
-# (JAC_k = |a interseção b |/|a união b|)
+# indice de Jaccard 
+# (JAC_k = |a intersecao b |/|a uniao b|)
 jaccard_index <- function(ranking_a, ranking_b, k) {
   uni <- union(ranking_a[1:k], ranking_b[1:k])
   inter <-  intersect(ranking_a[1:k], ranking_b[1:k])
@@ -182,18 +181,18 @@ kendall_tau <- function(ranking_a, ranking_b ) {
     D <- length(ranking_a)
     Cd <- (D * (D - 1)) / 2
     
-    # obtendo as posições dos elementos nos rankings
+    # obtendo as posicoes dos elementos nos rankings
     a <- order(ranking_a)
     b <- order(ranking_b)
 
-    # função testa se há uma discordância entre as 
-    # posições dos elementos i e j
+    # funcao testa se ha uma discordancia entre as 
+    # posicoes dos elementos i e j
     disagree <- function(i, j) {
         return((a[j] < a[i] && b[j] > b[i]) || 
                  (a[j] > a[i] && b[j] < b[i]))
     }
 
-    # função testa as discordâncias entre o elemento 
+    # funcao testa as discordancias entre o elemento 
     # j e os elementos i, com i < j
     count_disagree <- function(j) {
         mapply(disagree, i = 1:(j-1), 
@@ -205,10 +204,10 @@ kendall_tau <- function(ranking_a, ranking_b ) {
 }
 
 #####################################################
-# * Funções úteis para gerar plots:
+# * Funcoes uteis para gerar plots:
 #   - Tamanho do topo do ranking (eixo x) x
-#     precisão e revocação (eixo y)
-#   - Precisão (eixo x) x  Revocação (eixo y)
+#     precisao e revocacao (eixo y)
+#   - Precisao (eixo x) x  Revocacao (eixo y)
 # 
 ###########
 # Lista de cores para os plots
@@ -245,19 +244,11 @@ plot_precision_x_recall <- function(df,  title) {
       geom_line(aes(y = prec)) +
       theme_light() + 
       theme(plot.title = element_text(hjust = 0.5)) + 
-      scale_x_continuous(name = "Revocação", 
-                         limits = c(0.1, 0.6), 
-                         breaks = 0.1 * 0:6, 
+      scale_x_continuous(name = "Revocacao", 
+                         limits = c(0, 1), 
+                         breaks = 0.1 * 0:10, 
                          minor_breaks = NULL) + 
-      scale_y_continuous(name = "Precisão", limits = c(0, 1), 
+      scale_y_continuous(name = "Precisao", limits = c(0, 1), 
                          breaks = 0.1 * 0:10, 
                          minor_breaks = NULL)
 }
-
-#####################################################
-# Histórico
-# 
-# 01.02.2020 - (C.M.R.) Versão inicial
-# 29.12.2020 - (A.P.S.D.) Refatoração e comentários
-# dd.mm.aaaa - (W.H.O.) Desc.
-#####################################################

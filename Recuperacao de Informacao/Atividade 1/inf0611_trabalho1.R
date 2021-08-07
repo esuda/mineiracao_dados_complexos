@@ -4,9 +4,9 @@
 # Trabalho 1 - Recuperação de Texto                                  #
 ######################################################################
 # Nome COMPLETO dos integrantes do grupo:                            #
-#   -                                                                #
-#   -                                                                #
-#   -                                                                #
+#   - Daniel Noriaki Kurosawa                                        #
+#   - Eric Uyemura Suda                                              #
+#   - Fernando Shigeru Wakabayashi                                   #
 #                                                                    #
 ######################################################################
 
@@ -26,10 +26,13 @@ library(tidyverse)
 
 
 # Configure aqui o diretório onde se encontram os arquivos do trabalho
-# setw("")
-setwd('C:\\Users\\Eric\\Documents\\GitHub\\mineiracao_dados_complexos\\Recuperacao de Informacao\\Atividade 1')
+# setwd("")
 
-source("C:\\Users\\Eric\\Documents\\GitHub\\mineiracao_dados_complexos\\Recuperacao de Informacao\\Aula 1\\ranking_metrics.R", encoding = "UTF-8")
+mydir <- 'C:\\Users\\Eric\\Documents\\GitHub\\mineiracao_dados_complexos\\Recuperacao de Informacao\\Atividade 1'
+
+setwd(mydir)
+
+source("./ranking_metrics.R", encoding = "UTF-8")
 source("./trabalho1_base.R", encoding = "UTF-8")
 
 ######################################################################
@@ -52,7 +55,7 @@ queries <- process_data("queries.txt", "XX-Find [[:alnum:]]",
 # Visualizando as consultas (apenas para debuging)
 # head(queries)
 # Exemplo de acesso aos tokens de uma consulta
-q1 <- queries[queries$doc_id == "Query_01",]; q1
+# q1 <- queries[queries$doc_id == "Query_01",]; q1
 
 # Lendo uma lista de vetores de ground_truth
 ground_truths <- read.csv("relevance.csv", header = TRUE)
@@ -60,7 +63,7 @@ ground_truths <- read.csv("relevance.csv", header = TRUE)
 # Visualizando os ground_truths (apenas para debuging)
 # head(ground_truths)
 # Exemplo de acesso vetor de ground_truth da consulta 1:
-#ground_truths[1,]
+# ground_truths[1,]
 # Exemplo de impressão dos ids dos documentos relevantes da consulta 1:
 # Visualizando o ranking (apenas para debuging)
 # names(ground_truths)[ground_truths[1,]==1]
@@ -72,7 +75,7 @@ term_freq <- document_term_frequencies(docs, term="word")
 # Computando as estatísticas da coleção e convertendo em data.frame
 docs_stats <- as.data.frame(document_term_frequencies_statistics(term_freq, k = 1.2, b = 0.75))
 # Visualizando as estatísticas da coleção (apenas para debuging)
-head(docs_stats)
+# head(docs_stats)
 
 ######################################################################
 #
@@ -96,7 +99,7 @@ computa_resultados <- function(query, ground_truth, stats, stat_name,
   # Criando ranking (função do arquivo base)
   ranking <- get_ranking_by_stats(stat_name, stats, query$word)
   # Visualizando o ranking (apenas para debuging)
-  head(ranking, n = 5)
+  # head(ranking, n = 5)
   
   # Calculando a precisão
   p <- precision(ground_truth, ranking$doc_id, top)
@@ -113,6 +116,8 @@ computa_resultados <- function(query, ground_truth, stats, stat_name,
   plot_prec_e_rev(ranking$doc_id, ground_truth, top, text)
 }
 
+
+#Funcao Auxiliar apenas para retornar outras metricas de comparacao entre rankings
 metricas <- function(query, ground_truth, stats, stat_name, top) {
   # Criando ranking (função do arquivo base)
   ranking <- get_ranking_by_stats(stat_name, stats, query$word)
@@ -142,10 +147,6 @@ metricas <- function(query, ground_truth, stats, stat_name, top) {
 consulta1 <- queries[queries$doc_id == "Query_01",]
 n_consulta1 <- 1
 
-## Exemplo de uso da função computa_resultados:
-# computa_resultados(consulta1, ground_truths[n_consulta1, ], 
-#                    docs_stats, "nome da statistica", 
-#                    top = 15, "titulo")
 
 # Resultados para a consulta 1 e tf_idf
 computa_resultados(query=consulta1, ground_truth=ground_truths[n_consulta1, ], 
@@ -189,8 +190,8 @@ q2_bm25 <- metricas(query=consulta2, ground_truth=ground_truths[n_consulta2, ],
 # Avaliacao entre as metodologias de consulta tfidf vs bm25
 avg_precision_tfid <- map(list(list(ground_truths[n_consulta1, ] , q1_tfidf$doc_id), list(ground_truths[n_consulta2, ] , q2_tfidf$doc_id)), 20)
 avg_precision_bm25 <- map(list(list(ground_truths[n_consulta1, ] , q1_bm25$doc_id), list(ground_truths[n_consulta2, ] , q2_bm25$doc_id)), 20)
-print(cat(paste("Precisao media tfidf: ",avg_precision_tfid,
-                "\nPrecisao media bm25: ", avg_precision_bm25)))
+cat(paste("Precisao media tfidf: ",avg_precision_tfid,
+              "\nPrecisao media bm25: ", avg_precision_bm25))
 
 ######################################################################
 #
@@ -199,19 +200,22 @@ print(cat(paste("Precisao media tfidf: ",avg_precision_tfid,
 ######################################################################
 
 # Consulta 1 - Query 01:
-# Como os metodos TF-IDF e BM25 tem precisao e a revocacao iguais (p=0.35, r=1)
-#devemos observar a metrica de precisao media. Neste caso o metodo BM25 possui
-#approx. +24p.p (ap=0.620) quando comparado com TF-IDF (ap=0.856). Logo para esta
-#consulta o metodo BM25 seria o modelo ideal.
+#  Como os metodos TF-IDF e BM25 tem precisao e a revocacao iguais (p=0.35, r=1)
+# devemos observar a metrica de precisao media para avaliar se para k<20 temos uma
+# melhora na recuperacao de dados relevantes. Neste caso o metodo BM25 possui
+# approx. +24p.p (avgPrecision=0.86) quando comparado com TF-IDF (avgPrecision=0.62). 
+# Logo para esta consulta o metodo BM25 seria o modelo ideal.
 
 # Consulta 2 - Query 20:
-# A observacao dos graficos entre as metodologias claramente que o metodo BM25
-#retorna um resultado melhor que o do TF-IDF pois recupera todos os arquivos de
-#em um k muito mais baixo. Alem do mais o score F1 (+9p.p) e a precisao media (+39p.p)
+#  A observacao dos graficos entre as metodologias mostra claramente que o metodo BM25
+# retorna um resultado melhor que o do TF-IDF pois recupera todos os arquivos de
+# em um k=20 (TF-IDF - p=0.1, r=0.67; BM25 - p=0.15, r=1).
+# Assim temos um score F1 (+9p.p) e a precisao media (+39p.p) de BM25 superiores ao metodo 
+# de TF-IDF. Logo BM25 seria o modelo de consulta ideal.
 
 # Observacao entre as metodologias:
-# Utilizando o MAP para as duas metodologias, TF-IDF e BM25, poemos observar que 
-#o metodo bm25 retorna um resultado melhor que o do tf-idf (+31p.p).
+#  Utilizando o MAP para as duas metodologias, TF-IDF e BM25, poemos observar que 
+# o metodo BM25(MAP=0.35) retorna um resultado melhor que o do tf-idf(MAP=0.67) (+32p.p).
 
 ######################################################################
 #
@@ -287,8 +291,8 @@ q2_bm25_proc <- metricas(query=consulta2, ground_truth=ground_truths[n_consulta2
 # Avaliacao entre as metodologias de consulta tfidf vs bm25
 avg_precision_tfid_proc <- map(list(list(ground_truths[n_consulta1_proc, ] , q1_tfidf_proc$doc_id), list(ground_truths[n_consulta2_proc, ] , q2_tfidf_proc$doc_id)), 20)
 avg_precision_bm25_proc <- map(list(list(ground_truths[n_consulta1_proc, ] , q1_bm25_proc$doc_id), list(ground_truths[n_consulta2_proc, ] , q2_bm25_proc$doc_id)), 20)
-print(cat(paste("Precisao media tfidf: ",avg_precision_tfid_proc,
-                "\nPrecisao media bm25: ", avg_precision_bm25_proc)))
+cat(paste("Precisao media tfidf: ",avg_precision_tfid_proc,
+              "\nPrecisao media bm25: ", avg_precision_bm25_proc))
 
 ######################################################################
 #
@@ -297,19 +301,26 @@ print(cat(paste("Precisao media tfidf: ",avg_precision_tfid_proc,
 ######################################################################
  
 # Consulta 1 - Query 01:
-# Alterar a retirada de stop words para esta consulta tanto utilizando o modelo
-#TF-IDF ou o modelo de BM25 nao ha alteracao da precisao e da revocacao 
-#quando estamos recuperando k=20 primeiros documentos pois conseguimos uma revocacao
-#igual a 1 antes da recuperacao dos 20 primeiros elementos. Logo precisamos analisar
-#a precisao media e podemos observar que para o TF-IDF ha uma perda minima de precisao 
-#media (-2p.p), porem para o BM25 ha um aumento marginal de precisao media (+5p.p).
+#  Alterar a retirada de stop words para esta consulta, tanto utilizando o modelo
+# TF-IDF quanto o modelo de BM25 nao altera precisao e a revocacao 
+# quando estamos recuperando k=20 primeiros documentos. Logo precisamos analisar
+# a precisao media, assim observamos que para o metodo BM25 ha uma perda minima de precisao 
+# media (-2p.p) pois ele recupera um documento nao relevante em k=2, porem para o TF-IDF 
+# ha um aumento de precisao media de +5p.p, pois consegue recuperar mais rapidamente 
+# todos os documentos relevantes antes de k=20.
 
-# Consulta 2 - Query 10:
-# Semelhante ao caso da Query 01, retirar os stop words nao tem um impacto na precisao
-#e revocacao em k=20, porem, diferente da Query 1, nao chegamos em um valor de revocacao
-#igual a 1, logo ha espaco para as metodologias recuperarem mais registros relevantes
-#antes de atingir k=20. Notamos isso de forma mais pronunciada no BM25 com precisao media
-#de +22p.p e +4p.p no metodo TF_IDF.
+# Consulta 2 - Query 20:
+#  Semelhante ao caso da Query 01, retirar os stop words nao tem um impacto na precisao
+# e revocacao em k=20, porem observamos algumas diferencas entre os metodos de consulta.
+
+#  Para a metodologia BM25 notamos de forma mais pronunciada que 
+# a precisao media aumenta em +22p.p quando comparado a sem a remocao de stop words 
+# pois recuperamos todos os documentos relevantes mais rapidamente, com revocacao=1 em k=20.
+#  Ja no metodo TF-IDF nao chegamos em um valor de revocacao igual a 1 em k=20 para ambos os casos, 
+# e mesmo assim nao conseguimos recuperar um volume maior de documentos relevantes retirando os stopwords,
+# apenas conseguimos recupera-los mais rapidamente antes de k=20. Logo podemos obervar
+# atraves da precisao media que ha um aumento de +4p.p quando comparado a versao com
+# a retirada de stop words.
 
 ######################################################################
 #
@@ -319,11 +330,11 @@ print(cat(paste("Precisao media tfidf: ",avg_precision_tfid_proc,
 # Rstudio no momemto da execução. Esse comando pode ajudar a comparar 
 # os gráfico lado a lado.
 # 
-# plots.dir.path <- list.files(tempdir(), pattern="rs-graphics",
+#plots.dir.path <- list.files(tempdir(), pattern="rs-graphics",
 #                              full.names = TRUE);
-# plots.png.paths <- list.files(plots.dir.path, pattern=".png", 
+#plots.png.paths <- list.files(plots.dir.path, pattern=".png", 
 #                               full.names = TRUE)
-# file.copy(from=plots.png.paths, to="~/Desktop/")
+#file.copy(from=plots.png.paths, to='C:\\Users\\Eric\\Documents\\GitHub\\mineiracao_dados_complexos\\Recuperacao de Informacao\\Atividade 1')
 ######################################################################
 
 
