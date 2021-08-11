@@ -26,7 +26,6 @@ groupsum(chuvas, "cidade", "chuva")
 binToDec <- function(...){
   
   transform <- function(bin){
-    bin <- unlist(bin)
     pos <- length(bin)
     dec <- 0
     while (pos > 0){
@@ -36,8 +35,8 @@ binToDec <- function(...){
     return(dec)
   }
   
-  ans <- lapply(list(...), transform)
-  return(unlist(ans))
+  ans <- sapply(list(...), transform)
+  return(ans)
   
 }
 ##### Exemplos no PDF:
@@ -47,16 +46,23 @@ binToDec(rep(1, 3), rep(0, 2), rep(c(1,0), 2))
 
 ## 3 - Ocorrencia de Palavras
 
-wordCount <-
+wordCount <- function(word, text){
+  punct <- '[.,!?]*'
+  txt_list <- strsplit(gsub(punct, '', tolower(text)), split=' ')
+  print(txt_list[[1]])
+  return(sum(txt_list[[1]] == word))
+}
 
 ##### Exemplos no PDF:
-##### text <- "O rAto roeu a roupa do Rei de Roma! RainhA raivosa rasgou o resto."
-##### wordCount("rato", text)
-##### wordCount("roma", text)
-##### text <- "A vaca malHada foi molhADA por outra VACA, MOLhada e MALhaDa."
-##### wordCount("outra", text)
-##### wordCount("vaca", text)
-##### wordCount("malhada", text)
-##### text <- "Se a liga me ligasse, eu tambem ligava a liga. Mas a liga nao me liga, eu tambem nao ligo a liga."
-##### wordCount("liga", text)
-##### wordCount("ligasse", text)
+text <- "O rAto roeu a roupa do Rei de Roma! RainhA raivosa rasgou o resto."
+wordCount("rato", text)
+wordCount("roma", text)
+
+text <- "A vaca malHada foi molhADA por outra VACA, MOLhada e MALhaDa."
+wordCount("outra", text)
+wordCount("vaca", text)
+wordCount("malhada", text)
+
+text <- "Se a liga me ligasse, eu tambem ligava a liga. Mas a liga nao me liga, eu tambem nao ligo a liga."
+wordCount("liga", text)
+wordCount("ligasse", text)
