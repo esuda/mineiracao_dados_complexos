@@ -214,6 +214,29 @@ analyse_rankings(ranking_s_monogyna, ground_truth_monogyna)
 analyse_rankings(ranking_s_regia, ground_truth_regia)
 
 
+# Analise de dados
+plot_prec_e_rev(ranking_c_biloba, ground_truth_biloba, 20, 'Ranking Cor')
+plot_prec_e_rev(ranking_t_biloba, ground_truth_biloba, 20, 'Ranking Cor')
+plot_prec_e_rev(ranking_s_biloba, ground_truth_biloba, 20, 'Ranking Cor')
+
+mostrarGrayscale <- function(path_img, nome=''){
+  path_img <- as.character(path_img)
+  img <- load.image(path_img)
+  return(plot(grayscale(img), axes = FALSE, main = nome))
+}
+
+for (img_name in ranking_c_biloba[1:20]){
+  mostrarImagemColorida(img_name, img_name)
+}
+
+for (img_name in ranking_t_biloba[1:20]){
+  mostrarGrayscale(img_name, img_name)
+}
+
+for (img_name in ranking_s_biloba[1:20]){
+  mostrarGrayscale(img_name, img_name)
+}
+
 #----------------------------------------------------------------#
 # Questao 2 - RESPONDA:                   
 # (a) Escolha uma consulta para analisar mais detalhadamente e
