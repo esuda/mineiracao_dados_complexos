@@ -86,7 +86,7 @@ Momentos <-function(img){
   }
   
   area <- function(M) {
-    momento(M, 0, 0)
+    momento(M, 0, 0, central = TRUE)
   }
   
   assimetria <- function(M) {
@@ -225,6 +225,12 @@ mostrarGrayscale <- function(path_img, nome=''){
   return(plot(grayscale(img), axes = FALSE, main = nome))
 }
 
+lbp_desc <- function(img){
+  r1 <- lbp(img[,,1,1],1)
+  lbp_uniforme <- hist(r1$lbp.u2, plot=True, breaks=59)$counts
+  return(lbp_uniforme)
+}
+
 for (img_name in ranking_c_biloba[1:20]){
   mostrarImagemColorida(img_name, img_name)
 }
@@ -233,10 +239,20 @@ for (img_name in ranking_t_biloba[1:20]){
   mostrarGrayscale(img_name, img_name)
 }
 
-for (img_name in ranking_s_biloba[1:20]){
+par(mfrow = c(4,5), mar = rep(2, 4))
+for (img_name in ranking_s_biloba[30:50]){
   mostrarGrayscale(img_name, img_name)
 }
 
+
+par(mfrow = c(4,5), mar = rep(2, 4))
+for (img_name in ranking_t_biloba[1:20]){
+  path_img <- as.character(img_name)
+  img <- load.image(path_img)
+  gsc <- grayscale(img)
+  r1 <- lbp(gsc[,,1,1],1)
+  lbp_uniforme <- hist(r1$lbp.u2, main=img_name, plot=TRUE, breaks=59)$counts
+}
 #----------------------------------------------------------------#
 # Questao 2 - RESPONDA:                   
 # (a) Escolha uma consulta para analisar mais detalhadamente e

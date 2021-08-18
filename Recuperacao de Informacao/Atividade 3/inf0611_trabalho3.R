@@ -1,0 +1,249 @@
+#----------------------------------------------------------------#
+# INF-0611 Recuperacao de Informacao       
+#                       
+# Trabalho Avaliativo 3 
+#----------------------------------------------------------------#
+# Nome COMPLETO dos integrantes dp grupo:  
+# -                                        
+# -                                        
+# -                                        
+# 
+#----------------------------------------------------------------#
+
+#----------------------------------------------------------------#
+# Configuracao dos arquivos auxiliares 
+#----------------------------------------------------------------#
+# configure o caminho antes de executar
+setwd("C:\\Users\\Eric\\Documents\\GitHub\\mineiracao_dados_complexos\\Recuperacao de Informacao\\Atividade 3\\") 
+source("./ranking_metrics.R")
+source("./trabalho3_base.R")
+
+# caminho da pasta de imagens
+path_plantas = './plantas'
+
+#----------------------------------------------------------------#
+# Leitura das imagens 
+#----------------------------------------------------------------#
+imagens <- read_images(path_plantas)
+
+#----------------------------------------------------------------#
+# Obtem classe de cada imagem 
+#----------------------------------------------------------------#
+nome_classes <- get_classes(path_plantas)
+
+
+
+#----------------------------------------------------------------#
+# obtem ground_truth para cada classe 
+#----------------------------------------------------------------#
+ground_truth_biloba <- get_ground_truth(path_plantas, nome_classes, "biloba")
+ground_truth_europaea <- get_ground_truth(path_plantas, nome_classes, "europaea")
+ground_truth_ilex <- get_ground_truth(path_plantas, nome_classes, "ilex")
+ground_truth_monogyna <- get_ground_truth(path_plantas, nome_classes, "monogyna")
+ground_truth_regia <- get_ground_truth(path_plantas, nome_classes, "regia")
+
+#----------------------------------------------------------------#
+# Questao 1 
+#----------------------------------------------------------------#
+
+# obtem caracteristicas de cor  
+hist_cor_desc <- function(img){
+  r <- hist(img[,,1]*255, plot=FALSE, breaks=0:255)$counts
+  g <- hist(img[,,2]*255, plot=FALSE, breaks=0:255)$counts
+  b <- hist(img[,,3]*255, plot=FALSE, breaks=0:255)$counts
+  return(c(r, g, b))
+}
+
+# obtem caracteristicas de textura   
+lbp_desc <- function(img){
+  img <- grayscale(img)
+  r1 <- lbp(img[,,1,1],1)
+  lbp_uniforme <- hist(r1$lbp.u2, plot=FALSE, breaks=59)$counts
+  return(c(lbp_uniforme))
+}
+
+
+# obtem caracteristicas de forma 
+Momentos <-function(img){
+  
+  centroide <- function(M) {
+    c(momento(M, 1, 0) / momento(M, 0, 0),
+      momento(M, 0, 1) / momento(M, 0, 0))
+  }
+  
+  momento <- function(M, p, q, central = FALSE) {
+    r <- 0
+    if (central) {
+      c <- centroide(M)
+      x <- c[1]
+      y <- c[2]
+    } else {
+      x <- 0
+      y <- 0
+    }
+    for (i in 1:nrow(M))
+      for (j in 1:ncol(M))
+        r <- r + (i - x)^p * (j - y)^q * M[i,j]  
+    return(r)
+  }
+
+  img <- grayscale(img)[,,1,1]
+  features <-NULL
+  
+  for(i in c(0,3,4)){
+    features <- cbind(features,momento(img, i,i, central=TRUE))
+  }
+  return(features)
+}
+
+
+#----------------------------------------------------------------#
+# obtem características de cor, textura e forma  
+# para todas as imagens e armazena em matrizes 
+# onde uma linha e uma imagem 
+features_c <- t(sapply(imagens, hist_cor_desc))
+rownames(features_c) <- names(imagens)
+features_t <-t(sapply(imagens, lbp_desc))
+rownames(features_t) <- names(imagens)
+features_s <- t(sapply(imagens, Momentos))
+rownames(features_s) <- names(imagens)
+
+
+#----------------------------------------------------------------#
+# Questao 2 
+#----------------------------------------------------------------#
+
+# definindo as consultas
+# obs.:  use o caminho completo para a imagem
+consulta_biloba <- "./plantas/biloba_02.jpg"
+consulta_europaea <- "./plantas/europaea_01.jpg"
+consulta_ilex <- "./plantas/ilex_08.jpg"
+consulta_monogyna <- "./plantas/monogyna_04.jpg"
+consulta_regia <- "./plantas/regia_07.jpg"
+
+
+# analisando rankings
+analyse_rankings <- function(ranking, ground_truth) {
+  resultados <- c()
+  top_k = seq(5,20,5)
+  for(k in top_k){
+    prec <-precision(ground_truth, ranking, k) 
+    rec <-recall(ground_truth, ranking, k) 
+    f1 <-f1_score(ground_truth, ranking, k)
+    avg_prec <-ap(ground_truth, ranking, k)
+    resultados <- rbind(resultados, c(k, prec, rec, f1, avg_prec))
+  }
+  df <- data.frame(resultados)
+  colnames(df) <- c('k', 'precisao', 'revocacao', 'f1', 'avg_prec')
+  return(df)
+}
+
+
+# criando descritor concatenando 
+desc_all <- cbind(features_c,features_t,features_s)
+# criando rankings com descrito concatenado
+ranking_concat_biloba <- get_ranking_by_distance(desc_all, consulta_biloba, method="euclidean")
+ranking_concat_europaea <- get_ranking_by_distance(desc_all, consulta_europaea, method="euclidean")
+
+
+# analisando os rankings 
+analyse_rankings(ranking_concat_biloba, ground_truth_biloba)
+analyse_rankings(ranking_concat_europaea, ground_truth_europaea)
+
+
+
+#----------------------------------------------------------------#
+# Questao 3 
+#----------------------------------------------------------------#
+
+# calculando as distancias, descritor:  histograma de cor 
+dist_hist_biloba <- get_distance_vector(features_c, consulta_biloba, method="euclidean") 
+dist_hist_europea <- get_distance_vector(features_c, consulta_europaea, method="euclidean")
+
+# calculando as distancias, descritor:  textura 
+dist_text_biloba <- get_distance_vector(features_t, consulta_biloba, method="euclidean")
+dist_text_europea <- get_distance_vector(features_t, consulta_europaea, method="euclidean") 
+
+# calculando as distancias, descritor:  forma 
+dist_forma_biloba <- get_distance_vector(features_s, consulta_biloba, method="euclidean")
+dist_forma_europea <- get_distance_vector(features_s, consulta_europaea, method="euclidean") 
+
+# calculando e analisando  rankings combmin
+r_combmin_biloba <- names(imagens)[combmin(dist_hist_biloba, dist_text_biloba, dist_forma_biloba)]
+r_combmin_europea <-  names(imagens)[combmin(dist_hist_europea, dist_text_europea, dist_forma_europea)]
+
+analyse_rankings(r_combmin_biloba, ground_truth_biloba)
+analyse_rankings(r_combmin_europea, ground_truth_europaea)
+
+
+# calculando e analisando  rankings combmax
+r_combmax_biloba <- names(imagens)[combmax(dist_hist_biloba, dist_text_biloba, dist_forma_biloba)]
+r_combmax_europea <-  names(imagens)[combmax(dist_hist_europea, dist_text_europea, dist_forma_europea)]
+
+analyse_rankings(r_combmax_biloba, ground_truth_biloba)
+analyse_rankings(r_combmax_europea, ground_truth_europaea)
+
+# calculando e analisando  rankings combsum
+r_combsum_biloba <- names(imagens)[combsum(dist_hist_biloba, dist_text_biloba, dist_forma_biloba)]
+r_combsum_europea <-  names(imagens)[combsum(dist_hist_europea, dist_text_europea, dist_forma_europea)]
+
+analyse_rankings(r_combsum_biloba, ground_truth_biloba)
+analyse_rankings(r_combsum_europea, ground_truth_europaea)
+
+# calculando e analisando  rankings borda
+r_bordacount_biloba <- names(imagens)[bordacount(dist_hist_biloba, dist_text_biloba, dist_forma_biloba)]
+r_bordacount_europea <-  names(imagens)[bordacount(dist_hist_europea, dist_text_europea, dist_forma_europea)]
+
+analyse_rankings(r_bordacount_biloba, ground_truth_biloba)
+analyse_rankings(r_bordacount_europea, ground_truth_europaea)
+
+
+#----------------------------------------------------------------#
+# Questao 3 - RESPONDA:                   
+# (i) 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# (j) 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+#----------------------------------------------------------------#
+
+
+#----------------------------------------------------------------#
+# Questao 4 - RESPONDA:                   
+# (i) 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# (ii) 
+# 
+# 
+# 
+# 
+# 
+# (iii)
+# 
+# 
+# 
+# 
+# 
+# 
+#----------------------------------------------------------------#
