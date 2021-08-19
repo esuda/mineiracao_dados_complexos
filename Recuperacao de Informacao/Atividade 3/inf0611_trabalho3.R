@@ -170,7 +170,7 @@ dist_forma_europea <- get_distance_vector(features_s, consulta_europaea, method=
 
 # calculando e analisando  rankings combmin
 r_combmin_biloba <- names(imagens)[combmin(dist_hist_biloba, dist_text_biloba, dist_forma_biloba)]
-r_combmin_europea <-  names(imagens)[combmin(dist_hist_europea, dist_text_europea, dist_forma_europea)]
+r_combmin_europaea <-  names(imagens)[combmin(dist_hist_europea, dist_text_europea, dist_forma_europea)]
 
 analyse_rankings(r_combmin_biloba, ground_truth_biloba)
 analyse_rankings(r_combmin_europea, ground_truth_europaea)
@@ -178,38 +178,97 @@ analyse_rankings(r_combmin_europea, ground_truth_europaea)
 
 # calculando e analisando  rankings combmax
 r_combmax_biloba <- names(imagens)[combmax(dist_hist_biloba, dist_text_biloba, dist_forma_biloba)]
-r_combmax_europea <-  names(imagens)[combmax(dist_hist_europea, dist_text_europea, dist_forma_europea)]
+r_combmax_europaea <-  names(imagens)[combmax(dist_hist_europea, dist_text_europea, dist_forma_europea)]
 
 analyse_rankings(r_combmax_biloba, ground_truth_biloba)
-analyse_rankings(r_combmax_europea, ground_truth_europaea)
+analyse_rankings(r_combmax_europaea, ground_truth_europaea)
 
 # calculando e analisando  rankings combsum
 r_combsum_biloba <- names(imagens)[combsum(dist_hist_biloba, dist_text_biloba, dist_forma_biloba)]
-r_combsum_europea <-  names(imagens)[combsum(dist_hist_europea, dist_text_europea, dist_forma_europea)]
+r_combsum_europaea <-  names(imagens)[combsum(dist_hist_europea, dist_text_europea, dist_forma_europea)]
 
 analyse_rankings(r_combsum_biloba, ground_truth_biloba)
-analyse_rankings(r_combsum_europea, ground_truth_europaea)
+analyse_rankings(r_combsum_europaea, ground_truth_europaea)
 
 # calculando e analisando  rankings borda
 r_bordacount_biloba <- names(imagens)[bordacount(dist_hist_biloba, dist_text_biloba, dist_forma_biloba)]
-r_bordacount_europea <-  names(imagens)[bordacount(dist_hist_europea, dist_text_europea, dist_forma_europea)]
+r_bordacount_europaea <-  names(imagens)[bordacount(dist_hist_europea, dist_text_europea, dist_forma_europea)]
 
 analyse_rankings(r_bordacount_biloba, ground_truth_biloba)
-analyse_rankings(r_bordacount_europea, ground_truth_europaea)
+analyse_rankings(r_bordacount_europaea, ground_truth_europaea)
 
+
+# Codigos Auxiliares
+# Consulta escolhida - europea
+#--------------------------------------------------------#
+combmin_ranking <- analyse_rankings(r_combmin_biloba, ground_truth_biloba);combmin_ranking
+combmax_ranking <- analyse_rankings(r_combmax_biloba, ground_truth_biloba);combmax_ranking
+combsum_ranking <- analyse_rankings(r_combsum_biloba, ground_truth_biloba);combsum_ranking
+bordacount_ranking <- analyse_rankings(r_bordacount_biloba, ground_truth_biloba);bordacount_ranking
+
+combmin_ranking_eur <- analyse_rankings(r_combmin_europaea, ground_truth_europaea)
+combmax_ranking_eur <- analyse_rankings(r_combmax_europaea, ground_truth_europaea)
+combsum_ranking_eur <- analyse_rankings(r_combsum_europaea, ground_truth_europaea)
+bordacount_ranking_eur <- analyse_rankings(r_bordacount_europaea, ground_truth_europaea)
+
+plot_prec_e_rev(r_combmin_biloba, ground_truth_biloba, 20, 'Ranking Combmin biloba')
+plot_prec_e_rev(r_combmax_biloba, ground_truth_biloba, 20, 'Ranking Combmax biloba')
+plot_prec_e_rev(r_combsum_biloba, ground_truth_biloba, 20, 'Ranking Combsum biloba')
+plot_prec_e_rev(r_bordacount_biloba, ground_truth_biloba, 20, 'Ranking Borda Count biloba')
+
+rbind(dist_hist_biloba, dist_text_biloba, dist_forma_biloba)
+
+par(mfrow = c(5,2), mar = rep(2, 4))
+gtruth_pattern='/biloba_'
+mask=grep(gtruth_pattern,names(ground_truth_biloba))
+for (img_name in names(ground_truth_biloba[mask])){
+  mostrarImagemColorida(img_name, img_name)
+}
+
+par(mfrow = c(4,5), mar = rep(2, 4))
+for (img_name in r_combmin_biloba[1:20]){
+  mostrarImagemColorida(img_name, img_name)
+}
+par(mfrow = c(4,5), mar = rep(2, 4))
+for (img_name in r_combmax_biloba[1]){
+  mostrarImagemColorida(img_name, img_name)
+}
+par(mfrow = c(4,5), mar = rep(2, 4))
+for (img_name in r_combsum_biloba[1:20]){
+  mostrarImagemColorida(img_name, img_name)
+}
+par(mfrow = c(4,5), mar = rep(2, 4))
+for (img_name in r_bordacount_biloba[1:20]){
+  mostrarImagemColorida(img_name, img_name)
+}
+
+empilhado <- rbind(r_combmin_biloba, r_combmax_biloba, r_combsum_biloba, r_bordacount_biloba)
+
+# Media das precisoes medias
+media_precisoes_med_bilo <- rbind(colMeans(combmin_ranking)
+                             ,colMeans(combmax_ranking)
+                             ,colMeans(combsum_ranking)
+                             ,colMeans(bordacount_ranking))
+media_precisoes_med_eur <- rbind(colMeans(combmin_ranking_eur)
+                             ,colMeans(combmax_ranking_eur)
+                             ,colMeans(combsum_ranking_eur)
+                             ,colMeans(bordacount_ranking_eur))
+ 
 
 #----------------------------------------------------------------#
 # Questao 3 - RESPONDA:                   
 # (i) 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
+# Query utilizada - consulta_biloba
+# Observando a precisao media veemos que a agregacao via combmax retorna a maior precisao.
+# media (ap=1) em k=9 porem nao consegue chegar em revocacao=1, o que acontece com
+# as demais agregacoes, porem as outras agregacoes possuem uma precisao media menor que o combmax.
+# O combmax traz a folha de biloba_01 apenas na posicao 48 por causa que a distancia
+# calculada do vetor de forma (1.0) foi muito maior do que a distancia de textura (0.169) e de 
+# cor (0.0863). Notamos tambem que as folhas de biloba associam-se fortemente a cor em todos as
+# comparacoes, favorecendo o combmin e o combsum.
+
+# #### Falar sobre o bordacount
+
 # (j) 
 # 
 # 
