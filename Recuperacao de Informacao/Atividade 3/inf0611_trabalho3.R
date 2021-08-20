@@ -197,9 +197,9 @@ r_bordacount_europaea <-  names(imagens)[bordacount(dist_hist_europea, dist_text
 analyse_rankings(r_bordacount_biloba, ground_truth_biloba)
 analyse_rankings(r_bordacount_europaea, ground_truth_europaea)
 
-
+#--------------------------------------------------------#
 # Codigos Auxiliares
-# Consulta escolhida - europea
+# Consulta escolhida - biloba
 #--------------------------------------------------------#
 combmin_ranking <- analyse_rankings(r_combmin_biloba, ground_truth_biloba);combmin_ranking
 combmax_ranking <- analyse_rankings(r_combmax_biloba, ground_truth_biloba);combmax_ranking
@@ -225,36 +225,50 @@ for (img_name in names(ground_truth_biloba[mask])){
   mostrarImagemColorida(img_name, img_name)
 }
 
+# imagens dos primeiros 20 elementos do combmin
 par(mfrow = c(4,5), mar = rep(2, 4))
 for (img_name in r_combmin_biloba[1:20]){
   mostrarImagemColorida(img_name, img_name)
 }
+
+# imagens dos primeiros 20 elementos do combmax
 par(mfrow = c(4,5), mar = rep(2, 4))
-for (img_name in r_combmax_biloba[1]){
+for (img_name in r_combmax_biloba[1:20]){
   mostrarImagemColorida(img_name, img_name)
 }
+
+# imagens dos primeiros 20 elementos do combsum
 par(mfrow = c(4,5), mar = rep(2, 4))
 for (img_name in r_combsum_biloba[1:20]){
   mostrarImagemColorida(img_name, img_name)
 }
+
+# imagens dos primeiros 20 elementos do bordacount
 par(mfrow = c(4,5), mar = rep(2, 4))
 for (img_name in r_bordacount_biloba[1:20]){
   mostrarImagemColorida(img_name, img_name)
 }
 
+# Empilhando as consultas para avaliar como as combinacoes se comportam por imagem recuperada
 empilhado <- rbind(r_combmin_biloba, r_combmax_biloba, r_combsum_biloba, r_bordacount_biloba)
 
 # Media das precisoes medias
-media_precisoes_med_bilo <- rbind(colMeans(combmin_ranking)
-                             ,colMeans(combmax_ranking)
-                             ,colMeans(combsum_ranking)
-                             ,colMeans(bordacount_ranking))
-media_precisoes_med_eur <- rbind(colMeans(combmin_ranking_eur)
-                             ,colMeans(combmax_ranking_eur)
-                             ,colMeans(combsum_ranking_eur)
-                             ,colMeans(bordacount_ranking_eur))
- 
 
+media_precisoes_med_bilo <- rbind(mean(combmin_ranking$avg_prec)
+                                  ,mean(combmax_ranking$avg_prec)
+                                  ,mean(combsum_ranking$avg_prec)
+                                  ,mean(bordacount_ranking$avg_prec))
+
+media_precisoes_med_bilo <-  cbind(c('combmin', 'combmax', 'combsum', 'bordacount'), media_precisoes_med_bilo)
+colnames(media_precisoes_med_bilo) <- c('agreg', 'MAP'); media_precisoes_med_bilo
+
+media_precisoes_med_eur <- rbind(mean(combmin_ranking_eur$avg_prec)
+                                  ,mean(combmax_ranking_eur$avg_prec)
+                                  ,mean(combsum_ranking_eur$avg_prec)
+                                  ,mean(bordacount_ranking_eur$avg_prec))
+ 
+media_precisoes_med_eur <- cbind(c('combmin', 'combmax', 'combsum', 'bordacount'), media_precisoes_med_eur)
+colnames(media_precisoes_med_eur) <- c('agreg', 'MAP'); media_precisoes_med_eur
 #----------------------------------------------------------------#
 # Questao 3 - RESPONDA:                   
 # (i) 
@@ -262,47 +276,83 @@ media_precisoes_med_eur <- rbind(colMeans(combmin_ranking_eur)
 # Observando a precisao media veemos que a agregacao via combmax retorna a maior precisao.
 # media (ap=1) em k=9 porem nao consegue chegar em revocacao=1, o que acontece com
 # as demais agregacoes, porem as outras agregacoes possuem uma precisao media menor que o combmax.
-# O combmax traz a folha de biloba_01 apenas na posicao 48 por causa que a distancia
-# calculada do vetor de forma (1.0) foi muito maior do que a distancia de textura (0.169) e de 
-# cor (0.0863). Notamos tambem que as folhas de biloba associam-se fortemente a cor em todos as
+# 
+# A agregacao combmax nao chega a revocacao pois traz a folha de biloba_01 apenas na posicao 48 
+# por causa que a distancia calculada do vetor de forma (dist = 1.0) foi muito maior do que a 
+# distancia de textura (0.169) e de cor (0.0863). 
+
+# Notamos tambem que as folhas de biloba associam-se fortemente a cor em todos as
 # comparacoes, favorecendo o combmin e o combsum.
 
-# #### Falar sobre o bordacount
-
 # (j) 
-# 
-# 
-# 
-# 
+# Para a planta biloba o melhor agregador foi o commax com MAP = 1 porem nao esta muito atras
+# do combsum (MAP = 0.9885) e bordacount (MAP = 0.9309).
+# Ja para a folha europaea o combmax foi o unico que nao atingiu MAP = 1, com todos os outros
+# agregadores (combmin, combsum e bordacount) empatados com MAP = 1.
 # 
 # 
 # 
 #----------------------------------------------------------------#
+
+# Analises Questao 4
+
+# Biloba - Analise concatenado vs combsum
+analyse_rankings(ranking_concat_biloba, ground_truth_biloba)
+analyse_rankings(r_combsum_biloba, ground_truth_biloba)
+
+plot_prec_e_rev(ranking_concat_biloba, ground_truth_biloba, 20, 'Ranking Contatenado biloba')
+plot_prec_e_rev(r_combsum_biloba, ground_truth_biloba, 20, 'Ranking Combsum biloba')
+
+
+# Europaea - Analise concatenado vs combsum
+analyse_rankings(ranking_concat_europaea, ground_truth_europaea)
+analyse_rankings(r_combsum_europaea, ground_truth_europaea)
+
+plot_prec_e_rev(ranking_concat_europaea, ground_truth_europaea, 20, 'Ranking Contatenado europaea')
+plot_prec_e_rev(r_combsum_europaea, ground_truth_europaea, 20, 'Ranking Combsum europaea')
+
+
+# Analise visual das imagens - Consulta Biloba
+# descritores concatenados
+par(mfrow = c(2,3), mar = rep(2, 4))
+for (img_name in ranking_concat_biloba[1:6]){
+  mostrarImagemColorida(img_name, img_name)
+}
+# Agregacao via combsum
+par(mfrow = c(2,3), mar = rep(2, 4))
+for (img_name in r_combsum_biloba[1:6]){
+  mostrarImagemColorida(img_name, img_name)
+}
 
 
 #----------------------------------------------------------------#
 # Questao 4 - RESPONDA:                   
 # (i) 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
+# Para a consulta da folha biloba podemos ver que a precisao e revocacao nos k=5, 10, 15, 20
+# da consulta por combsum apresenta valors superiores em todos os pontos quando comparado a 
+# concatenacao dos descritores. Alem disso pelo grafico de Precisao e Revocacao por k podemos observar
+# como a consulta por combsum recupera os itens de forma mais rapida e tbm chega a revocacao = 1 em k=16.
+# Logo para esta consulta a agregacao dos descritores foi mais efetiva que a concatenacao dos descritores. 
+#
+# Para a consulta da folha europaea, as metricas de precisao e revocacao dos rankings, bem como a precisao
+# media possuem os mesmos valores independente do k utilizado.O grafico de Precisao e Revocacao por k
+# apresenta exatamente o mesmo comportamento chegando em uma revocacao = 1 em k = 10. Logo nao ha diferenca
+# entre os descritores serem cocatenados ou utilizar a agregacao dos rankings.
 # 
 # 
 # (ii) 
-# 
-# 
-# 
-# 
-# 
+# Analisando os dois conjunto de imagens para a consulta da folha biloba, podemos ver que a consulta atraves
+# do metodo de agregacao de foi mais efeciente por trazer apenas folhas de biloba com as mesmas caracteristicas
+# visuais de tamanho e de cor. Ja a consulta via agregacao de descritores recuperou apenas o primeiro resultado 
+# correto de biloba, recuperando  ilex, monogyna e regia respectivamente. Visualmente falando 
+# os descritores de forma foram ignorados pois trouxeram resultados de ilex e regia e o os descritores
+# de cor tambem, pois todas as folhas apresentam um tom de verde mais esturo que a folha biloba.
+#
 # (iii)
+# Para o caso da consulta da folha biloba, o melhor agregador (combmax) traz tambem o conjunto mais interessante
+# de folhas recuperadas, visto que recupera 9 folhas consecutivas de biloba ate k=9.
 # 
-# 
-# 
-# 
+# (iv)
 # 
 # 
 #----------------------------------------------------------------#
