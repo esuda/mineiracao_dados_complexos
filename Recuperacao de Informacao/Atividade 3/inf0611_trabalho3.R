@@ -4,9 +4,9 @@
 # Trabalho Avaliativo 3 
 #----------------------------------------------------------------#
 # Nome COMPLETO dos integrantes dp grupo:  
-# -                                        
-# -                                        
-# -                                        
+# - Daniel Noriaki Kurosawa                                        
+# - Eric Uyemura Suda                                       
+# - Fernando Shigeru Wakabayashi                                        
 # 
 #----------------------------------------------------------------#
 
@@ -121,7 +121,6 @@ consulta_ilex <- "./plantas/ilex_08.jpg"
 consulta_monogyna <- "./plantas/monogyna_04.jpg"
 consulta_regia <- "./plantas/regia_07.jpg"
 
-
 # analisando rankings
 analyse_rankings <- function(ranking, ground_truth) {
   resultados <- c()
@@ -149,7 +148,6 @@ ranking_concat_europaea <- get_ranking_by_distance(desc_all, consulta_europaea, 
 # analisando os rankings 
 analyse_rankings(ranking_concat_biloba, ground_truth_biloba)
 analyse_rankings(ranking_concat_europaea, ground_truth_europaea)
-
 
 
 #----------------------------------------------------------------#
@@ -195,7 +193,7 @@ r_bordacount_biloba <- names(imagens)[bordacount(dist_hist_biloba, dist_text_bil
 r_bordacount_europaea <-  names(imagens)[bordacount(dist_hist_europea, dist_text_europea, dist_forma_europea)]
 
 analyse_rankings(r_bordacount_biloba, ground_truth_biloba)
-analyse_rankings(r_bordacount_europaea, ground_truth_europaea)
+
 
 #--------------------------------------------------------#
 # Codigos Auxiliares
@@ -273,19 +271,20 @@ colnames(media_precisoes_med_eur) <- c('agreg', 'MAP'); media_precisoes_med_eur
 # Questao 3 - RESPONDA:                   
 # (i) 
 # Query utilizada - consulta_biloba
-# Observando a precisao media veemos que a agregacao via combmax retorna a maior precisao.
-# media (ap=1) em k=9 porem nao consegue chegar em revocacao=1, o que acontece com
-# as demais agregacoes, porem as outras agregacoes possuem uma precisao media menor que o combmax.
+# Observando a precisao media, dentro do intervalo considerado com k ate 20, vemos que a agregacao 
+# via combmax retorna a maior precisao media (ap=1) em k=9 porem nao consegue chegar em revocacao=1, 
+# o que acontece com as demais agregacoes, porem as outras agregacoes possuem uma precisao media 
+# menor que o combmax.
 # 
 # A agregacao combmax nao chega a revocacao pois traz a folha de biloba_01 apenas na posicao 48 
 # por causa que a distancia calculada do vetor de forma (dist = 1.0) foi muito maior do que a 
 # distancia de textura (0.169) e de cor (0.0863). 
-
+#
 # Notamos tambem que as folhas de biloba associam-se fortemente a cor em todos as
 # comparacoes, favorecendo o combmin e o combsum.
 
 # (j) 
-# Para a planta biloba o melhor agregador foi o commax com MAP = 1 porem nao esta muito atras
+# Para a planta biloba o melhor agregador foi o combmax com MAP = 1 porem nao esta muito atras
 # do combsum (MAP = 0.9885) e bordacount (MAP = 0.9309).
 # Ja para a folha europaea o combmax foi o unico que nao atingiu MAP = 1, com todos os outros
 # agregadores (combmin, combsum e bordacount) empatados com MAP = 1.
@@ -320,10 +319,88 @@ for (img_name in ranking_concat_biloba[1:6]){
 }
 # Agregacao via combsum
 par(mfrow = c(2,3), mar = rep(2, 4))
-for (img_name in r_combsum_biloba[1:6]){
+for (img_name in r_combmax_biloba[1:6]){
   mostrarImagemColorida(img_name, img_name)
 }
 
+# Analise visual das imagens - Consulta Europaea
+# descritores concatenados
+par(mfrow = c(2,3), mar = rep(2, 4))
+for (img_name in ranking_concat_europaea[1:6]){
+  mostrarImagemColorida(img_name, img_name)
+}
+# Agregacao via combsum
+par(mfrow = c(2,3), mar = rep(2, 4))
+for (img_name in r_combsum_europaea[1:6]){
+  mostrarImagemColorida(img_name, img_name)
+}
+
+
+# Melhor metodo em top 10
+
+# Funcao para retornar o MAP por descritor selecionado
+get_map <- function(feature){
+  k=5
+  # Ranking Concatenado
+  vetor_consultas <- c(
+    consulta_biloba,
+    consulta_europaea,
+    consulta_ilex,
+    consulta_monogyna,
+    consulta_regia
+  )
+  vetor_groundtruth <- list(
+    ground_truth_biloba,
+    ground_truth_europaea,
+    ground_truth_ilex,
+    ground_truth_monogyna,
+    ground_truth_regia
+  )
+  avg_p = 0
+  for (i in 1:5){
+    ranking <- get_ranking_by_distance(feature, vetor_consultas[i], method='euclidean')
+    avg_p <- analyse_rankings(ranking, vetor_groundtruth[[i]])[2,5] + avg_p
+  }
+  return(avg_p/k)
+}
+
+# Funcao para retornar o MAP o metodo de agregacao combmax
+get_map_combmax <- function(feature_c, feature_t, feature_s){
+  k=5
+  # Ranking Concatenado
+  vetor_consultas <- c(
+    consulta_biloba,
+    consulta_europaea,
+    consulta_ilex,
+    consulta_monogyna,
+    consulta_regia
+  )
+  vetor_groundtruth <- list(
+    ground_truth_biloba,
+    ground_truth_europaea,
+    ground_truth_ilex,
+    ground_truth_monogyna,
+    ground_truth_regia
+  )
+  avg_p = 0
+  for (i in 1:5){
+    dist_c <- get_distance_vector(feature_c, vetor_consultas[i], method='euclidean')
+    dist_t <- get_distance_vector(feature_t, vetor_consultas[i], method='euclidean')
+    dist_s <- get_distance_vector(feature_s, vetor_consultas[i], method='euclidean')
+    
+    r_combmax <- names(imagens)[combmax(dist_c, dist_t, dist_s)]
+    
+    avg_p <- analyse_rankings(r_combmax, vetor_groundtruth[[i]])[2,5] + avg_p
+  }
+  return(avg_p/k)
+}
+
+# MAPs para cada metodo selecionado
+get_map(features_c)
+get_map(features_t)
+get_map(features_s)
+get_map(desc_all)
+get_map_combmax(features_c, features_t, features_s)
 
 #----------------------------------------------------------------#
 # Questao 4 - RESPONDA:                   
@@ -331,28 +408,29 @@ for (img_name in r_combsum_biloba[1:6]){
 # Para a consulta da folha biloba podemos ver que a precisao e revocacao nos k=5, 10, 15, 20
 # da consulta por combsum apresenta valors superiores em todos os pontos quando comparado a 
 # concatenacao dos descritores. Alem disso pelo grafico de Precisao e Revocacao por k podemos observar
-# como a consulta por combsum recupera os itens de forma mais rapida e tbm chega a revocacao = 1 em k=16.
+# como a consulta por combsum recupera os itens de forma mais rapida e tambem chega a revocacao = 1 em k=16.
 # Logo para esta consulta a agregacao dos descritores foi mais efetiva que a concatenacao dos descritores. 
 #
 # Para a consulta da folha europaea, as metricas de precisao e revocacao dos rankings, bem como a precisao
 # media possuem os mesmos valores independente do k utilizado.O grafico de Precisao e Revocacao por k
 # apresenta exatamente o mesmo comportamento chegando em uma revocacao = 1 em k = 10. Logo nao ha diferenca
-# entre os descritores serem cocatenados ou utilizar a agregacao dos rankings.
-# 
+# entre os descritores serem cocatenados ou utilizar a agregacao dos rankings. Notamos apenas que a ordem
+# de recuperacao das folhas varia entre as duas buscas.
 # 
 # (ii) 
 # Analisando os dois conjunto de imagens para a consulta da folha biloba, podemos ver que a consulta atraves
-# do metodo de agregacao de foi mais efeciente por trazer apenas folhas de biloba com as mesmas caracteristicas
+# do metodo de agregacao (combmax) foi mais efeciente por trazer apenas folhas de biloba com as mesmas caracteristicas
 # visuais de tamanho e de cor. Ja a consulta via agregacao de descritores recuperou apenas o primeiro resultado 
-# correto de biloba, recuperando  ilex, monogyna e regia respectivamente. Visualmente falando 
+# correto de biloba(ela mesma), recuperando  ilex, monogyna e regia respectivamente. Visualmente falando 
 # os descritores de forma foram ignorados pois trouxeram resultados de ilex e regia e o os descritores
 # de cor tambem, pois todas as folhas apresentam um tom de verde mais esturo que a folha biloba.
 #
 # (iii)
+# Considerando que por interessante seria a recuperacao de todas as imagens de forma precisa e rapida.
 # Para o caso da consulta da folha biloba, o melhor agregador (combmax) traz tambem o conjunto mais interessante
 # de folhas recuperadas, visto que recupera 9 folhas consecutivas de biloba ate k=9.
 # 
 # (iv)
-# 
-# 
+#  Conforme o calculado nas linhas 309 e 403, o melhor metodo de recuperacao para todos os tipos de folhas em k=10 
+# levando em consideracao o MAP foi o combmax com um MAP=0.9134. 
 #----------------------------------------------------------------#
