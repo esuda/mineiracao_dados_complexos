@@ -156,53 +156,53 @@ analyse_rankings(ranking_concat_europaea, ground_truth_europaea)
 
 # calculando as distancias, descritor:  histograma de cor 
 dist_hist_biloba <- get_distance_vector(features_c, consulta_biloba, method="euclidean") 
-dist_hist_europea <- get_distance_vector(features_c, consulta_europaea, method="euclidean")
+dist_hist_europaea <- get_distance_vector(features_c, consulta_europaea, method="euclidean")
 
 # calculando as distancias, descritor:  textura 
 dist_text_biloba <- get_distance_vector(features_t, consulta_biloba, method="euclidean")
-dist_text_europea <- get_distance_vector(features_t, consulta_europaea, method="euclidean") 
+dist_text_europaea <- get_distance_vector(features_t, consulta_europaea, method="euclidean") 
 
 # calculando as distancias, descritor:  forma 
 dist_forma_biloba <- get_distance_vector(features_s, consulta_biloba, method="euclidean")
-dist_forma_europea <- get_distance_vector(features_s, consulta_europaea, method="euclidean") 
+dist_forma_europaea <- get_distance_vector(features_s, consulta_europaea, method="euclidean") 
 
 # calculando e analisando  rankings combmin
 r_combmin_biloba <- names(imagens)[combmin(dist_hist_biloba, dist_text_biloba, dist_forma_biloba)]
-r_combmin_europaea <-  names(imagens)[combmin(dist_hist_europea, dist_text_europea, dist_forma_europea)]
+r_combmin_europaea <-  names(imagens)[combmin(dist_hist_europaea, dist_text_europaea, dist_forma_europaea)]
 
 analyse_rankings(r_combmin_biloba, ground_truth_biloba)
-analyse_rankings(r_combmin_europea, ground_truth_europaea)
+analyse_rankings(r_combmin_europaea, ground_truth_europaea)
 
 
 # calculando e analisando  rankings combmax
 r_combmax_biloba <- names(imagens)[combmax(dist_hist_biloba, dist_text_biloba, dist_forma_biloba)]
-r_combmax_europaea <-  names(imagens)[combmax(dist_hist_europea, dist_text_europea, dist_forma_europea)]
+r_combmax_europaea <-  names(imagens)[combmax(dist_hist_europaea, dist_text_europaea, dist_forma_europaea)]
 
 analyse_rankings(r_combmax_biloba, ground_truth_biloba)
 analyse_rankings(r_combmax_europaea, ground_truth_europaea)
 
 # calculando e analisando  rankings combsum
 r_combsum_biloba <- names(imagens)[combsum(dist_hist_biloba, dist_text_biloba, dist_forma_biloba)]
-r_combsum_europaea <-  names(imagens)[combsum(dist_hist_europea, dist_text_europea, dist_forma_europea)]
+r_combsum_europaea <-  names(imagens)[combsum(dist_hist_europaea, dist_text_europaea, dist_forma_europaea)]
 
 analyse_rankings(r_combsum_biloba, ground_truth_biloba)
 analyse_rankings(r_combsum_europaea, ground_truth_europaea)
 
 # calculando e analisando  rankings borda
 r_bordacount_biloba <- names(imagens)[bordacount(dist_hist_biloba, dist_text_biloba, dist_forma_biloba)]
-r_bordacount_europaea <-  names(imagens)[bordacount(dist_hist_europea, dist_text_europea, dist_forma_europea)]
+r_bordacount_europaea <-  names(imagens)[bordacount(dist_hist_europaea, dist_text_europaea, dist_forma_europaea)]
 
 analyse_rankings(r_bordacount_biloba, ground_truth_biloba)
-
+analyse_rankings(r_bordacount_europaea, ground_truth_europaea)
 
 #--------------------------------------------------------#
 # Codigos Auxiliares
 # Consulta escolhida - biloba
 #--------------------------------------------------------#
-combmin_ranking <- analyse_rankings(r_combmin_biloba, ground_truth_biloba);combmin_ranking
-combmax_ranking <- analyse_rankings(r_combmax_biloba, ground_truth_biloba);combmax_ranking
-combsum_ranking <- analyse_rankings(r_combsum_biloba, ground_truth_biloba);combsum_ranking
-bordacount_ranking <- analyse_rankings(r_bordacount_biloba, ground_truth_biloba);bordacount_ranking
+combmin_ranking_bilo <- analyse_rankings(r_combmin_biloba, ground_truth_biloba);combmin_ranking_bilo
+combmax_ranking_bilo <- analyse_rankings(r_combmax_biloba, ground_truth_biloba);combmax_ranking_bilo
+combsum_ranking_bilo <- analyse_rankings(r_combsum_biloba, ground_truth_biloba);combsum_ranking_bilo
+bordacount_ranking_bilo <- analyse_rankings(r_bordacount_biloba, ground_truth_biloba);bordacount_ranking_bilo
 
 combmin_ranking_eur <- analyse_rankings(r_combmin_europaea, ground_truth_europaea)
 combmax_ranking_eur <- analyse_rankings(r_combmax_europaea, ground_truth_europaea)
@@ -252,10 +252,10 @@ empilhado <- rbind(r_combmin_biloba, r_combmax_biloba, r_combsum_biloba, r_borda
 
 # Media das precisoes medias
 
-media_precisoes_med_bilo <- rbind(mean(combmin_ranking$avg_prec)
-                                  ,mean(combmax_ranking$avg_prec)
-                                  ,mean(combsum_ranking$avg_prec)
-                                  ,mean(bordacount_ranking$avg_prec))
+media_precisoes_med_bilo <- rbind(mean(combmin_ranking_bilo$avg_prec)
+                                  ,mean(combmax_ranking_bilo$avg_prec)
+                                  ,mean(combsum_ranking_bilo$avg_prec)
+                                  ,mean(bordacount_ranking_bilo$avg_prec))
 
 media_precisoes_med_bilo <-  cbind(c('combmin', 'combmax', 'combsum', 'bordacount'), media_precisoes_med_bilo)
 colnames(media_precisoes_med_bilo) <- c('agreg', 'MAP'); media_precisoes_med_bilo
