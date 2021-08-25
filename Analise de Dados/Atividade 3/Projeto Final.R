@@ -2,8 +2,12 @@
 # Codigo - Projeto Final analise de dados
 #
 
+# Limpando espaco de trabalho
+rm(list=ls())
+
 # Importanto bibliotecas
 library(ggplot2)
+library(dbplyr)
 
 # --------------------
 # 1) Importando tabela
@@ -20,8 +24,8 @@ cepagri <- read.table(csv_url,header=FALSE, fill=TRUE, sep=';', col.names=col_na
 # -----------------
 # 2) Sumario basico
 # -----------------
-
-summary(cepagiri)
+# Primeiro sumario apenas para ver como estao as variaveis em questao de classe e preenchimento
+summary(cepagri)
 
 # --------------------------------
 # 3) Ajustando Formato das Colunas
@@ -35,18 +39,53 @@ cepagri$horario <- as.POSIXct(cepagri$horario,
 # Substituindo coluna de temperatura com '[ERRO]' para NA
 # e transformando para numerico
 cepagri[grep('[A-Z]+',cepagri$temp),]$temp <- NA
-cepagri <- cepagri[!is.na(cepagri$temp),]
+
+# Antes da retirada de NA 
+# n = 387.846
+length(cepagri$horario)
+
+# Avaliacao de quantos registros nulos existem no dataset
+datas_na <- cepagri[is.na(cepagri$temp),]
+table(as.Date(datas_na$horario))
+# Quantidade de registros marcados com ERRO desde 2014
+# n = 31.305
+nrow(datas_na)
+
 cepagri$temp <- as.numeric(cepagri$temp)
-summary(cepagri)
+
 # --------
-# 4) Delimitando janela temporal
+# 4) Delimitando janela temporal do estudo
 # -----
 
-inicio <- as.POSIXct('2015-01-01',format='%Y-%m-%d')
-fim <- as.POSIXct('2020-12-31',format='%Y-%m-%d')
+inicio <- as.Date('2015-01-01')
+fim <- as.Date('2020-12-31')
 janela <- (as.Date(cepagri$horario) >= inicio & as.Date(cepagri$horario) <= fim)
 
 cepagri_janela <- cepagri[janela,]
-summary(cepagri_janela)
-count(cepagri)
-count(cepagri_janela)
+
+nrow(cepagri)
+# Quantidade de linhas apos o filtro por data
+# n = 311.917
+nrow(cepagri_janela)
+
+# --------
+# 5) Tratamento de Outliers
+# -----
+
+# Validacao da temperatura
+# Minimos e maximos estao OK 5-28 graus
+summary(cepagri_janela$temp)
+
+# Validacao sensacao termica
+# Valores estranhos de -8 ate 99 graus
+summary(cepagri_janela$sensa)
+
+head(cepagri_janela[(cepagri_janela$sensa < 0) & !(is.na(cepagri_janela$sensa)),])
+head(cepagri_janela[(cepagri_janela$sensa > 99) & !(is.na(cepagri_janela$sensa)),])
+
+sensacao_termica <- function(v, t){
+  s <- 33 + (((10*sqrt(v)) + 10.45 - v)*((t-33)/22))
+  return(s)
+}
+
+sensacao_termica(78, 15)
