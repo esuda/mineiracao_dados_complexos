@@ -19,7 +19,6 @@ csv_url <- url("https://ic.unicamp.br/~zanoni/cepagri/cepagri.csv")
 col_names <- c("horario", "temp", "vento", "umid", "sensa")
 cepagri <- read.table(csv_url,header=FALSE, fill=TRUE, sep=';', col.names=col_names)
 
-cepagri_aux[as.Date(cepagri$horario)=="2015-01-21",]
 # Arquivo csv nao tem cabecalho, input manual do nome das colunas
 # e varias colunas marcadas com [ERRO] (header=FALASE e fill=TRUE)
 
@@ -35,7 +34,9 @@ summary(cepagri)
 
 # Transformando a coluna de string para horas
 cepagri$horario <- as.POSIXct(cepagri$horario,
-                              format = '%d/%m/%Y-%H:%M')
+                              format = '%d/%m/%Y-%H:%M', 
+                              tz = "America/Sao_Paulo")
+
 
 # Substituindo coluna de temperatura com '[ERRO]' para NA
 # e transformando para numerico
@@ -54,23 +55,77 @@ nrow(datas_na)
 
 cepagri$temp <- as.numeric(cepagri$temp)
 
-# --------
+# ----------------------------------------
 # 4) Delimitando janela temporal do estudo
-# -----
+# ----------------------------------------
 
-inicio <- as.Date('2015-01-02')
-fim <- as.Date('2020-12-31')
-janela <- (as.Date(cepagri$horario) >= inicio & as.Date(cepagri$horario) <= fim)
+inicio <- as.POSIXct('2015-01-01',format= '%Y-%m-%d')
+fim <- as.POSIXct('2020-12-31',format= '%Y-%m-%d')
+janela <- (cepagri$horario >= inicio & cepagri$horario <= fim)
 
 cepagri_janela <- cepagri[janela,]
 
-nrow(cepagri)
 # Quantidade de linhas apos o filtro por data
 # n = 311.917
 nrow(cepagri_janela)
 
+summary(cepagri_janela)
+# ----------------------------------
+# 5) Remocao de Valores NA
+# ----------------------------------
+
+# Criando colunas auxiliares
+cepagri_janela$data_lt <- as.POSIXlt(cepagri_janela$horario)
+cepagri_janela$ano <- unclass(cepagri_janela$data_lt)$year + 1900
+cepagri_janela$mes <- unclass(cepagri_janela$data_lt)$mon + 1
+
+# Depara para chamada de meses
+ordem_meses <- c('JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ')
+cepagri_depara <- cepagri_janela %>% mutate(nom_mes =case_when(
+  mes==1 ~ 'JAN',
+  mes==2 ~ 'FEV',
+  mes==3 ~ 'MAR',
+  mes==4 ~ 'ABR',
+  mes==5 ~ 'MAI',
+  mes==6 ~ 'JUN',
+  mes==7 ~ 'JUL',
+  mes==8 ~ 'AGO',
+  mes==9 ~ 'SET',
+  mes==10 ~ 'OUT',
+  mes==11 ~ 'NOV',
+  mes==12 ~ 'DEZ',
+  TRUE ~ 'ERRO'
+)
+)
+
+# Verificacao visual dos NAs
+# Gerando talbela agrupada para plot
+table <- cepagri_depara %>% 
+  group_by(mes,nom_mes, ano) %>% 
+  summarise(count_na=sum(is.na(temp))) %>%
+  arrange(mes)
+
+# Plot de heatmap para analise de registros vazios
+ggplot(table, aes(x=nom_mes, y=ano, fill=count_na)) + 
+  geom_tile() +
+  scale_fill_gradient(low="navy", high="red") +
+  scale_x_discrete(limits=ordem_meses) +
+  xlab('Mes') +
+  ylab('Ano') +
+  ggtitle('Analise de quantidade de campos vazios') +
+  labs(fill='#Registros NA')
+
+cepagri_janela <- cepagri_janela[(is.na(cepagri_janela$temp)==FALSE) & (is.na(cepagri_janela$sensa)==FALSE), ]
+
+
+# Verificacao visual apos a remocao dos NAs
+table2 <- cepagri_janela %>% group_by(ano, mes) %>% summarise(count=length(temp)) 
+ggplot(table2, aes(x=mes, y=ano, fill=count)) + 
+  geom_tile() +
+  scale_fill_gradient(low="red", high="navy")
+
 # -------------------------
-# 5) Tratamento de Outliers
+# 6) Tratamento de Outliers
 # -------------------------
 
 # Validacao da temperatura
@@ -80,6 +135,9 @@ summary(cepagri_janela$temp)
 # Validacao do vento
 # Valores Ok (existem noticias que indicam ventos de ate 143k)
 summary(cepagri_janela$vento)
+cepagri_janela[cepagri_janela$vento == 143.60, ]
+cepagri_janela[48498:48508,]
+
 
 # Validacao do vento
 # Valores Ok vai ate 100%
@@ -95,41 +153,10 @@ tail(cepagri_janela[(cepagri_janela$sensa > 90) & !(is.na(cepagri_janela$sensa))
 # Pelo plot podemos observar que ha valores marcados no final do plot que parecem erros
 ggplot(cepagri_janela, aes(x=sensa, y= ..density..)) + geom_histogram(color='White', bins=100) + geom_density()
 
-# iqr <- IQR(cepagri_janela$sensa, na.rm=TRUE)
-# sensa_max <- stats[2]
-
 # Aplicando NA para os valores de sensacao termica = 99.9 por ser um possivel erro sistemico
 cepagri_janela[cepagri_janela$sensa == 99.9 & is.na(cepagri_janela$sensa) == FALSE, ]$sensa <- NA
 summary(cepagri_janela$sensa)
 
-# ----------------------------------
-# 5) Remocao de Valores NA
-# ----------------------------------
-cepagri_janela$data_lt <- as.POSIXlt(cepagri_janela$horario)
-cepagri_janela$ano <- unclass(cepagri_janela$data_lt)$year + 1900
-cepagri_janela$mes <- unclass(cepagri_janela$data_lt)$mon + 1
-
-# Verificacao visual dos NAs
-table <- cepagri_janela %>% group_by(ano, mes) %>% summarise(count_na=sum(is.na(temp))) 
-ggplot(table, aes(x=mes, y=ano, fill=count_na)) + 
-  geom_tile() +
-  scale_fill_gradient(low="navy", high="red")
-
-cepagri_aux <- cepagri_janela[(is.na(cepagri_janela$temp)==FALSE) & (is.na(cepagri_janela$sensa)==FALSE), ]
-cepagri_aux2 <- cepagri_janela[(is.na(cepagri_janela$temp)==FALSE) , ]
-# summary(cepagri_aux2)
-
-# Verificacao visual apos a remocao dos NAs
-table2 <- cepagri_aux %>% group_by(ano, mes) %>% summarise(count=length(temp)) 
-ggplot(table2, aes(x=mes, y=ano, fill=count_na)) + 
-  geom_tile() +
-  scale_fill_gradient(low="red", high="navy")
-
-# n=22.085 registros NA retirados da base
-# Equivalente a 7% da base
-na_s <- nrow(cepagri_janela[(is.na(cepagri_janela$temp)==TRUE) | (is.na(cepagri_janela$sensa)==TRUE), ])
-tot <-nrow(cepagri_janela)
-na_s/tot
 
 # ----------------------------------
 # 6) Tratamento de Valores Repetidos

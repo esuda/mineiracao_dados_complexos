@@ -14,7 +14,7 @@ verdade <- factor(c(1, 1, 0, 1, 0, 0, 1, 0, 0, 0))
 predito <- factor(c(1, 0, 0, 1, 0, 0, 1, 1, 1, 0))
 
 resultado <- confusionMatrix(predito, verdade)
-oprint(resultado)
+print(resultado)
 
 # Exemplo: matriz de confusao com 2 classes
 classes <- c("normal", "abnormal")
