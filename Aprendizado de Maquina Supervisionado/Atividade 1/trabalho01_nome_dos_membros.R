@@ -98,7 +98,7 @@ dim(val_set)
 colnames(val_set)
 
 #########
-# Verificacao da categoria marcada como (OTHER) no summary
+# Verificacao da categoria marcada como (OTHER) na coluna wd
 tapply(train_set$No, train_set$wd, length)
 
 #########
@@ -106,9 +106,17 @@ tapply(train_set$No, train_set$wd, length)
 melt_train_set <- train_set[, -which(names(train_set) %in% c('No', 'wd', 'year', 'month', 'day'))]
 melt_train_set <- melt(melt_train_set)
 
-ggplot(data=melt_train_set, aes(x=value))+
+p <- ggplot(data=melt_train_set, aes(x=value))+
     stat_density()+
     facet_wrap(~variable, scales='free')
+p
+
+########
+# Visualizacao dos boxplots para retirada de outliers
+p <- ggplot(data = melt_train_set[melt_train_set$variable!='target', ], aes(x=variable, y=value)) + 
+    geom_boxplot()
+p + facet_wrap( ~ variable, scales="free_y")
+p
 
 #########
 # Problema com a variavel RAIN, quase todos os registros tem valor 0
@@ -118,27 +126,41 @@ ggplot(train_set, aes(x=RAIN)) +
 
 tapply(train_set$No, train_set$RAIN, length)
 
+########
+# Funcao para criar Onehot encoding para a variavel de direcao do vento
+
+onehot_features <- function(dataset, feature){
+    cats <- unique(dataset[, feature])
+    for (cat in cats){
+        dataset[cat] <- as.numeric(dataset[,feature]==cat)
+    }
+    return(dataset)
+}
+train_set <- onehot_features(train_set, 'wd')
+val_set <- onehot_features(val_set, 'wd')
+
 #########
-# Retiraremos a priori as variaveis No, RAIN e wd para gerar nosso caso BASELINE
+# Retiraremos a priori as variaveis No e RAIN para gerar nosso caso BASELINE
 train_set_clean <- train_set[, -which(names(train_set) %in% c('No', 'wd', 'RAIN'))]
 val_set_clean <- val_set[, -which(names(train_set) %in% c('No', 'wd', 'RAIN'))]
+
+# summary(train_set_clean)
 
 #########
 # Devido a distribuicao nao normal dos dados iremos aplicar uma normalizacao min-max
 # exceto para as variaveis de data e a variavel target
-min_features <- apply(train_set_clean[,6:ncol(train_set_clean)-1], 2, min); min_features
+min_features <- apply(train_set_clean[,5:14], 2, min); min_features
 
-max_features <- apply(train_set_clean[,6:ncol(train_set_clean)-1], 2, max); max_features
+max_features <- apply(train_set_clean[,5:14], 2, max); max_features
 
 diff <- max_features - min_features; diff
 
-train_set_clean[,6:ncol(train_set_clean)-1] <- sweep(train_set_clean[,6:ncol(train_set_clean)-1], 2, min_features, "-")
-train_set_clean[,6:ncol(train_set_clean)-1] <- sweep(train_set_clean[,6:ncol(train_set_clean)-1], 2, diff, "/")
+train_set_clean[,5:14] <- sweep(train_set_clean[,5:14], 2, min_features, "-")
+train_set_clean[,5:14] <- sweep(train_set_clean[,5:14], 2, diff, "/")
 summary(train_set_clean)
 
-val_set_clean[,6:ncol(val_set_clean)] <- sweep(val_set_clean[,6:ncol(val_set_clean)], 2, min_features, "-")
-val_set_clean[,6:ncol(val_set_clean)] <- sweep(val_set_clean[,6:ncol(val_set_clean)], 2, diff, "/")
-summary(val_set_clean)
+val_set_clean[,5:14] <- sweep(val_set_clean[,5:14], 2, min_features, "-")
+val_set_clean[,5:14] <- sweep(val_set_clean[,5:14], 2, diff, "/")
 
 # testSet[,2:ncol(testSet)] <- sweep(testSet[,2:ncol(testSet)], 2, min_features, "-")
 # testSet[,2:ncol(testSet)] <- sweep(testSet[,2:ncol(testSet)], 2, diff, "/")
@@ -146,7 +168,7 @@ summary(val_set_clean)
 
 ########
 # Visualizacao dos dados apos normalizacao min max (Visualmente nao alterou muito a distribuicao)
-melt_train_set <- train_set_clean[, -which(names(train_set_clean) %in% c('No', 'wd', 'year', 'month', 'day'))]
+melt_train_set <- train_set_clean[, -which(names(train_set_clean) %in% c('No', 'wd', 'year', 'month', 'day', 'hour'))]
 melt_train_set <- melt(melt_train_set)
 
 ggplot(data=melt_train_set, aes(x=value))+
@@ -154,6 +176,133 @@ ggplot(data=melt_train_set, aes(x=value))+
     facet_wrap(~variable, scales='free')
 
 
+########
+# Criacao do modelo Baseline
+wd_columns <- unique(train_set$wd);wd_columns
+
+########
+# Para o onehot encoding, utilizar n-1 features de flags
+wd_columns <- as.character(wd_columns)[1:(length(wd_columns)-1)];wd_columns
+
+not_include <- c(wd_columns, 'target');not_include
+
+feature_names <- colnames(train_set_clean[, -which(names(train_set_clean) %in% not_include)]);feature_names
+
+
+hypothesis <- getHypothesis(feature_names, categorical_feature_names=wd_columns,degree=1);hypothesis
+
+## Baseline ##
+baseline <- lm(formula=hypothesis, data=train_set_clean)
+
+valPred <- predict(baseline, val_set_clean)
+trainPred <- predict(baseline, train_set_clean)
+
+# testPred <- predict(baseline, testSet)
+
+
+MAE <- function(preds, labels){
+    mae_values <- sum(abs(preds-labels))/length(preds)
+    return(mae_values)
+}
+
+MSE <- function(preds, labels){
+    mse_values <- sum((preds-labels)**2)/length(preds)
+    return(mse_values)
+}
+
+mae_train_baseline <- MAE(trainPred, train_set_clean$target)
+mae_train_baseline
+
+mae_val_baseline <- MAE(valPred, val_set_clean$target)
+mae_val_baseline
+
+########
+# Criacao de modelos atraves da combinacao de features
+h02 <- formula(target ~ I(year^1) + I(month^1) + I(day^1) + I(hour^1) + I(PM2.5^1) + 
+                   I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + I(TEMP^1) + I(PRES^1) + 
+                   I(DEWP^1) + I(WSPM^1) + I(WSW^1) + NE + SE + SSE + SSW + 
+                   NNE + SW + S + WNW + ESE + NNW + NW + W + E + ENE + N +
+                   (
+                       I(PM2.5^1) + I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + 
+                       I(TEMP^1) + I(PRES^1) + I(DEWP^1) + I(WSPM^1) + I(WSW^1)
+                   )^2
+               )
+
+h03 <- formula(target ~ I(year^1) + I(month^1) + I(day^1) + I(hour^1) + I(PM2.5^1) + 
+                   I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + I(TEMP^1) + I(PRES^1) + 
+                   I(DEWP^1) + I(WSPM^1) + I(WSW^1) + NE + SE + SSE + SSW + 
+                   NNE + SW + S + WNW + ESE + NNW + NW + W + E + ENE + N +
+                   (
+                       I(PM2.5^1) + I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + 
+                           I(TEMP^1) + I(PRES^1) + I(DEWP^1) + I(WSPM^1) + I(WSW^1)
+                   )^3
+)
+
+h04 <- formula(target ~ I(year^1) + I(month^1) + I(day^1) + I(hour^1) + I(PM2.5^1) + 
+                   I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + I(TEMP^1) + I(PRES^1) + 
+                   I(DEWP^1) + I(WSPM^1) + I(WSW^1) + NE + SE + SSE + SSW + 
+                   NNE + SW + S + WNW + ESE + NNW + NW + W + E + ENE + N +
+                   (
+                       I(PM2.5^1) + I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + 
+                           I(TEMP^1) + I(PRES^1) + I(DEWP^1) + I(WSPM^1) + I(WSW^1)
+                   )^4
+)
+
+h05 <- formula(target ~ I(year^1) + I(month^1) + I(day^1) + I(hour^1) + I(PM2.5^1) + 
+                   I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + I(TEMP^1) + I(PRES^1) + 
+                   I(DEWP^1) + I(WSPM^1) + I(WSW^1) + NE + SE + SSE + SSW + 
+                   NNE + SW + S + WNW + ESE + NNW + NW + W + E + ENE + N +
+                   (
+                       I(PM2.5^1) + I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + 
+                           I(TEMP^1) + I(PRES^1) + I(DEWP^1) + I(WSPM^1) + I(WSW^1)
+                   )^5
+)
+
+modelsCategorical <- c(h02, h03, h04, h05)
+total_mae_train_noCat <- c(length(modelsCategorical))
+total_mae_val_noCat <- c(length(modelsCategorical))
+
+i <- 1
+for(f in modelsCategorical){
+    
+    dataTrain <- train_set_clean
+    dataVal <- val_set_clean
+    
+    model <- lm(formula=f, data=dataTrain)
+    
+    valPred <- predict(model, dataVal)
+    trainPred <- predict(model, dataTrain)
+    
+    mae_train <- MAE(trainPred, dataTrain$target)
+    total_mae_train_noCat[i] <- mae_train
+    
+    mae_val <- MAE(valPred, dataVal$target)
+    total_mae_val_noCat[i] <- mae_val
+    i <- i + 1
+    
+}
+
+summary(model)
+
+plot(total_mae_val_noCat, xlab="Complexity", ylab="Error", 
+     ylim=c(0.02, 0.05), pch="+", col="blue",  xaxt="n")
+
+axis(1, at=1:length(modelsCategorical), labels=seq(from = 1, to = 4, by = 1), las=1)
+
+points(total_mae_train_noCat, pch="*", col="red")
+
+points(rep(mae_val_baseline, length(total_mae_val_noCat)), pch="o", col="green")
+
+lines(total_mae_train_noCat, col="red", lty=2)
+lines(total_mae_val_noCat, col="blue", lty=2)
+lines(rep(mae_val_baseline, length(total_mae_val_noCat)), col="green", lty=2)
+legend(1, 45000, legend=c("Train", "Validation", "Baseline"), 
+       col=c("red","blue", "green"), lty=2, cex=0.8)
+
+########
+# Criacao de modelos atraves da combinacao de polinomios
+
+#TO DO
 
 # Descomente a linha abaixo apenas quando o conjunto de teste esiver dispon?vel
 #test_set <- read.csv("test_set_air_quality.csv", stringsAsFactors=TRUE)
