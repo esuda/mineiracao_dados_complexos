@@ -25,7 +25,7 @@ Antes de começar a implementação do seu trabalho configure o _workspace_ e im
 library(arules)
 
 # Configurando ambiente de trabalho:
-# setwd("")
+setwd("/Users/nkuros/Documents/mineiracao_dados_complexos/Aprendizado de Maquina Nao Supervisionado/Trabalho 1")
 
 ```
 
@@ -36,16 +36,17 @@ Dado um caminho para uma base de dados, leia as transações e faça uma anális
 
 ```{r atv1-code}
 # Ler transações
-transactions <- read.transactions(file='bakery.csv', format='basket', sep=',')
+transactions <- read.transactions("./bakery.csv", format="basket", 
+                                sep=",")
+
 # Visualizando transações
-transactions
+inspect(transactions[1:10])
 
 # Sumário da base
 summary(transactions)
-inspect(transactions[1:10,])
 
 # Analisando a frequência dos itens 
-itemFrequencyPlot(transactions,topN=30)
+itemFrequencyPlot(transactions,topN = 30)
 
 ```
 
@@ -55,13 +56,14 @@ itemFrequencyPlot(transactions,topN=30)
 a) Descreva a base de dados discutindo os resultados das funções acima. 
 
 **Resposta:** <!-- Escreva sua resposta abaixo -->
-A base analisada possui 2.579 transações e 91 produtos únicos, com uma média de 3,2 produtos por transação. Temos que dentro do primeiro quartil das transações são realizadas com 2 produtos, há 4 produtos por transação no terceiro quartil e temos um máximo de 10 ítens por transação. Por ser uma bakery os produtos mais pedidos são os tradicionais com café sendo o mais pedido, seguido de pão, chá e bolo.
+
+
 <!-- Fim da resposta -->
 
 b) Ao gerarmos o gráfico de frequências, temos uma representação visual de uma informação já presente no resultado da função `summary`. Contudo, esse gráfico nos dá uma visão mais ampla da base. Assim podemos ver a frequência de outros itens em relação aos 10 mais frequentes. Quais informações podemos obter a partir desse gráfico (e da análise anterior) para nos ajudar na extração de regras de associação com o algoritmo `apriori`? Isto é, como a frequência dos itens pode afetar os parâmetros de configuração do algoritmo `apriori`? 
 
 **Resposta:** <!-- Escreva sua resposta abaixo -->
-A quantidade total de itens afetara o número de combinações possíveis em que poderemos gerar as regras de associação utilizando o algoritmo apriori.
+
 
 <!-- Fim da resposta -->
 
@@ -71,12 +73,30 @@ Use o algoritmo `apriori` para minerar regras na base de dados fornecida. Experi
 
 ```{r atv2-code}
 # Conjunto 1: suporte =    e confiança =    
+regras <- apriori(data=Groceries, 
+                  parameter=list(supp=0.001, conf=0.15,minlen=2), 
+                  appearance=list(default="rhs", lhs="Coffee"),
+                  control=list(verbose=F))
+regras <- sort(regras, decreasing=TRUE, by="confidence")
+inspect(regras[1:5])
 
 
 # Conjunto 2: suporte =    e confiança =    
- 
+ regras <- apriori(data=Groceries, 
+                  parameter=list(supp=0.001, conf=0.15,minlen=2), 
+                  appearance=list(default="rhs", lhs="Bread"),
+                  control=list(verbose=F))
+regras <- sort(regras, decreasing=TRUE, by="confidence")
+inspect(regras[1:5])
+
 
 # Conjunto 3: suporte =    e confiança =    
+regras <- apriori(data=Groceries, 
+                  parameter=list(supp=0.001, conf=0.15,minlen=2), 
+                  appearance=list(default="rhs", lhs="Pastry"),
+                  control=list(verbose=F))
+regras <- sort(regras, decreasing=TRUE, by="confidence")
+inspect(regras[1:5])
 
 
 ```
@@ -96,12 +116,17 @@ Vimos na aula que, mesmo após as podas do algoritmo `apriori`, ainda temos algu
 
 ```{r atv3-code}
 # Compute as medidas de interesse 
+medidas <- interestMeasure(regras, 
+                           c("confidence", "conviction",
+                             "coverage", "support", 
+                             "oddsRatio", "leverage"), Groceries)
 
 
 # Apresente as regras ordenadas por lift
+inspect(head(sort(regras, by="lift"), 5))
 
 # Apresente as regras ordenadas por convicção
-
+inspect(sort(sort(regras, by="conviction"), by="confidence")[1:5])
 # Apresente as regras ordenadas por razão de chances
 
 
