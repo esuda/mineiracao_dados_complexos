@@ -33,7 +33,7 @@
 
 # Vejam os exerc?cios 02 e 03 para ver o funcionamento 
 # de uma funcao similar a essa.
-
+setwd("/Users/nkuros/Documents/mineiracao_dados_complexos/Aprendizado de Maquina Supervisionado/Atividade 1")
 
 getHypothesis <- function(real_feature_names, categorical_feature_names=F, degree=3){
     
@@ -65,8 +65,9 @@ getHypothesis <- function(real_feature_names, categorical_feature_names=F, degre
 rm(list=ls())
 graphics.off()
 
-train_set <- read.csv("training_set_air_quality.csv", stringsAsFactors=TRUE)
-val_set <- read.csv("validation_set_air_quality.csv", stringsAsFactors=TRUE)
+train_set <- read.csv("./training_set_air_quality.csv", stringsAsFactors=TRUE)
+val_set <- read.csv("./validation_set_air_quality.csv", stringsAsFactors=TRUE)
+#test_set <- read.csv("test_set_air_quality.csv", stringsAsFactors=TRUE)
 
 # Desenvolvam o trabalho a partir daqui, apos executarem os comandos a cima
 
@@ -97,6 +98,10 @@ summary(val_set)
 dim(val_set)
 colnames(val_set)
 
+# summary(test_set)
+# dim(test_set)
+# colnames(test_set)
+
 #########
 # Verificacao da categoria marcada como (OTHER) na coluna wd
 tapply(train_set$No, train_set$wd, length)
@@ -108,15 +113,15 @@ melt_train_set <- melt(melt_train_set)
 
 p <- ggplot(data=melt_train_set, aes(x=value))+
     stat_density()+
-    facet_wrap(~variable, scales='free')
-p
+    facet_wrap(~variable, scales='free'); p
+
 
 ########
 # Visualizacao dos boxplots para retirada de outliers
 p <- ggplot(data = melt_train_set[melt_train_set$variable!='target', ], aes(x=variable, y=value)) + 
     geom_boxplot()
-p + facet_wrap( ~ variable, scales="free_y")
-p
+p + facet_wrap( ~ variable, scales="free_y"); p
+
 
 #########
 # Problema com a variavel RAIN, quase todos os registros tem valor 0
