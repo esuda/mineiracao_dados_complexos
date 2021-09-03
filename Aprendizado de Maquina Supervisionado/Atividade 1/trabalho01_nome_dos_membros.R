@@ -178,10 +178,11 @@ ggplot(data=melt_train_set, aes(x=value))+
 
 ########
 # Criacao do modelo Baseline
-wd_columns <- unique(train_set$wd);wd_columns
 
 ########
 # Para o onehot encoding, utilizar n-1 features de flags
+wd_columns <- unique(train_set$wd);wd_columns
+
 wd_columns <- as.character(wd_columns)[1:(length(wd_columns)-1)];wd_columns
 
 not_include <- c(wd_columns, 'target');not_include
@@ -258,7 +259,13 @@ h05 <- formula(target ~ I(year^1) + I(month^1) + I(day^1) + I(hour^1) + I(PM2.5^
                    )^5
 )
 
-modelsCategorical <- c(h02, h03, h04, h05)
+h06 <- getHypothesis(feature_names, categorical_feature_names=wd_columns,degree=2)
+h07 <- getHypothesis(feature_names, categorical_feature_names=wd_columns,degree=3)
+h08 <- getHypothesis(feature_names, categorical_feature_names=wd_columns,degree=4)
+h09 <- getHypothesis(feature_names, categorical_feature_names=wd_columns,degree=5)
+h10 <- getHypothesis(feature_names, categorical_feature_names=wd_columns,degree=10)
+
+modelsCategorical <- c(h02, h03, h04, h05,h06, h07, h08, h09, h10)
 total_mae_train_noCat <- c(length(modelsCategorical))
 total_mae_val_noCat <- c(length(modelsCategorical))
 
@@ -287,7 +294,7 @@ summary(model)
 plot(total_mae_val_noCat, xlab="Complexity", ylab="Error", 
      ylim=c(0.02, 0.05), pch="+", col="blue",  xaxt="n")
 
-axis(1, at=1:length(modelsCategorical), labels=seq(from = 1, to = 4, by = 1), las=1)
+axis(1, at=1:length(modelsCategorical), labels=seq(from = 1, to = 9, by = 1), las=1)
 
 points(total_mae_train_noCat, pch="*", col="red")
 
@@ -296,13 +303,13 @@ points(rep(mae_val_baseline, length(total_mae_val_noCat)), pch="o", col="green")
 lines(total_mae_train_noCat, col="red", lty=2)
 lines(total_mae_val_noCat, col="blue", lty=2)
 lines(rep(mae_val_baseline, length(total_mae_val_noCat)), col="green", lty=2)
-legend(1, 45000, legend=c("Train", "Validation", "Baseline"), 
+legend(0, 0, legend=c("Train", "Validation", "Baseline"), 
        col=c("red","blue", "green"), lty=2, cex=0.8)
 
 ########
 # Criacao de modelos atraves da combinacao de polinomios
 
-#TO DO
+
 
 # Descomente a linha abaixo apenas quando o conjunto de teste esiver dispon?vel
 #test_set <- read.csv("test_set_air_quality.csv", stringsAsFactors=TRUE)
