@@ -25,7 +25,6 @@ Antes de começar a implementação do seu trabalho configure o _workspace_ e im
 library(arules)
 
 # Configurando ambiente de trabalho:
-setwd("/Users/nkuros/Documents/mineiracao_dados_complexos/Aprendizado de Maquina Nao Supervisionado/Trabalho 1")
 
 ```
 
@@ -36,8 +35,7 @@ Dado um caminho para uma base de dados, leia as transações e faça uma anális
 
 ```{r atv1-code}
 # Ler transações
-transactions <- read.transactions("./bakery.csv", format="basket", 
-                                sep=",")
+transactions <- read.transactions("bakery.csv", format="basket", sep=",")
 
 # Visualizando transações
 inspect(transactions[1:10])
@@ -56,14 +54,14 @@ itemFrequencyPlot(transactions,topN = 30)
 a) Descreva a base de dados discutindo os resultados das funções acima. 
 
 **Resposta:** <!-- Escreva sua resposta abaixo -->
-
+Para este conjunto de dados há 2.579 transações sendo que existem 91 objetos únicos de compra registrados. Em média há 3,2 ítens sendo comprados por transação e uma distribuição da seguinte forma, primeiro quartil igual a 2 ítens, mediana igual a 3, terceiro quartil igual a 4 e máxmo de ítens igual a 10. Os ítens mais comprados individualmente fazem sentido já que as transações são de uma bakery, logo há no top 5 café, pão, chá, bolo e doces.
 
 <!-- Fim da resposta -->
 
 b) Ao gerarmos o gráfico de frequências, temos uma representação visual de uma informação já presente no resultado da função `summary`. Contudo, esse gráfico nos dá uma visão mais ampla da base. Assim podemos ver a frequência de outros itens em relação aos 10 mais frequentes. Quais informações podemos obter a partir desse gráfico (e da análise anterior) para nos ajudar na extração de regras de associação com o algoritmo `apriori`? Isto é, como a frequência dos itens pode afetar os parâmetros de configuração do algoritmo `apriori`? 
 
 **Resposta:** <!-- Escreva sua resposta abaixo -->
-
+A frequencia dos ítens afeta o algoritmo pois quanto mais ítens distintos, mais combinações podem ser realizadas na hora de se gerar as regras, deve-se atentar aos parâmetros de suporte e confiança mínimos para se adequarem aos dados. 
 
 <!-- Fim da resposta -->
 
