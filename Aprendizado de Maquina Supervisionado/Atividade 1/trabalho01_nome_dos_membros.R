@@ -154,18 +154,18 @@ val_set_clean <- val_set[, -which(names(train_set) %in% c('No', 'wd', 'RAIN'))]
 #########
 # Devido a distribuicao nao normal dos dados iremos aplicar uma normalizacao min-max
 # exceto para as variaveis de data e a variavel target
-min_features <- apply(train_set_clean[,5:14], 2, min); min_features
+min_features <- apply(train_set_clean[,5:13], 2, min); min_features
 
-max_features <- apply(train_set_clean[,5:14], 2, max); max_features
+max_features <- apply(train_set_clean[,5:13], 2, max); max_features
 
 diff <- max_features - min_features; diff
 
-train_set_clean[,5:14] <- sweep(train_set_clean[,5:14], 2, min_features, "-")
-train_set_clean[,5:14] <- sweep(train_set_clean[,5:14], 2, diff, "/")
+train_set_clean[,5:13] <- sweep(train_set_clean[,5:13], 2, min_features, "-")
+train_set_clean[,5:13] <- sweep(train_set_clean[,5:13], 2, diff, "/")
 summary(train_set_clean)
 
-val_set_clean[,5:14] <- sweep(val_set_clean[,5:14], 2, min_features, "-")
-val_set_clean[,5:14] <- sweep(val_set_clean[,5:14], 2, diff, "/")
+val_set_clean[,5:13] <- sweep(val_set_clean[,5:13], 2, min_features, "-")
+val_set_clean[,5:13] <- sweep(val_set_clean[,5:13], 2, diff, "/")
 
 # testSet[,2:ncol(testSet)] <- sweep(testSet[,2:ncol(testSet)], 2, min_features, "-")
 # testSet[,2:ncol(testSet)] <- sweep(testSet[,2:ncol(testSet)], 2, diff, "/")
@@ -296,19 +296,26 @@ for(f in modelsCategorical){
 
 summary(model)
 
-plot(total_mae_val_noCat, xlab="Complexity", ylab="Error", 
-     ylim=c(0.02, 0.05), pch="+", col="blue",  xaxt="n")
+plot(total_mae_val_noCat[5:9], xlab="Complexity", ylab="Error", 
+     ylim=c(200, 500), pch="+", col="blue",  xaxt="n")
+
+points(total_mae_val_noCat[1:4], pch="+", col="blue")
+
+points(total_mae_train_noCat[5:9], pch="*", col="red")
+points(total_mae_train_noCat[1:4], pch="*", col="red")
+
+points(rep(mae_val_baseline, 5), pch="o", col="green")
 
 axis(1, at=1:length(modelsCategorical), labels=seq(from = 1, to = 9, by = 1), las=1)
 
-points(total_mae_train_noCat, pch="*", col="red")
+lines(total_mae_train_noCat[1:4], col="orange", lty=2)
+lines(total_mae_val_noCat[1:4], col="black", lty=2)
 
-points(rep(mae_val_baseline, length(total_mae_val_noCat)), pch="o", col="green")
+lines(total_mae_train_noCat[5:9], col="red", lty=2)
+lines(total_mae_val_noCat[5:9], col="blue", lty=2)
 
-lines(total_mae_train_noCat, col="red", lty=2)
-lines(total_mae_val_noCat, col="blue", lty=2)
 lines(rep(mae_val_baseline, length(total_mae_val_noCat)), col="green", lty=2)
-legend(0, 0, legend=c("Train", "Validation", "Baseline"), 
+legend(500, y=NULL, legend=c("Train", "Validation", "Baseline"), 
        col=c("red","blue", "green"), lty=2, cex=0.8)
 
 ########
