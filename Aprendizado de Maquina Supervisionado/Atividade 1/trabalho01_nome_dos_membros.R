@@ -146,35 +146,35 @@ val_set <- onehot_features(val_set, 'wd')
 test_set <- onehot_features(test_set, 'wd')
 
 #########
-# Retiraremos a priori as variaveis No e RAIN para gerar nosso caso BASELINE
-train_set_clean <- train_set[, -which(names(train_set) %in% c('No', 'wd', 'RAIN', 'N'))]
-val_set_clean <- val_set[, -which(names(val_set) %in% c('No', 'wd', 'RAIN', 'N'))]
-test_set_clean <- test_set[, -which(names(test_set) %in% c('No', 'wd', 'RAIN', 'N'))]
+# Retirando No e a última variável de vento  para gerar nosso caso BASELINE
+train_set_clean <- train_set[, -which(names(train_set) %in% c('No', 'wd', 'N'))]
+val_set_clean <- val_set[, -which(names(val_set) %in% c('No', 'wd', 'N'))]
+test_set_clean <- test_set[, -which(names(test_set) %in% c('No', 'wd', 'N'))]
 
 setdiff(colnames(train_set_clean), colnames(val_set_clean))
 setdiff(colnames(train_set_clean), colnames(test_set_clean))
 setdiff(colnames(val_set_clean), colnames(test_set_clean))
 
-# summary(train_set_clean)
+summary(train_set_clean)
 
 #########
 # Devido a distribuicao nao normal dos dados iremos aplicar uma normalizacao min-max
 # exceto para as variaveis de data e a variavel target
-min_features <- apply(train_set_clean[,5:13], 2, min); min_features
+min_features <- apply(train_set_clean[,5:14], 2, min); min_features
 
-max_features <- apply(train_set_clean[,5:13], 2, max); max_features
+max_features <- apply(train_set_clean[,5:14], 2, max); max_features
 
 diff <- max_features - min_features; diff
 
-train_set_clean[,5:13] <- sweep(train_set_clean[,5:13], 2, min_features, "-")
-train_set_clean[,5:13] <- sweep(train_set_clean[,5:13], 2, diff, "/")
+train_set_clean[,5:14] <- sweep(train_set_clean[,5:14], 2, min_features, "-")
+train_set_clean[,5:14] <- sweep(train_set_clean[,5:14], 2, diff, "/")
 summary(train_set_clean)
 
-val_set_clean[,5:13] <- sweep(val_set_clean[,5:13], 2, min_features, "-")
-val_set_clean[,5:13] <- sweep(val_set_clean[,5:13], 2, diff, "/")
+val_set_clean[,5:14] <- sweep(val_set_clean[,5:14], 2, min_features, "-")
+val_set_clean[,5:14] <- sweep(val_set_clean[,5:14], 2, diff, "/")
 
-test_set_clean[,5:13] <- sweep(test_set_clean[,5:13], 2, min_features, "-")
-test_set_clean[,5:13] <- sweep(test_set_clean[,5:13], 2, diff, "/")
+test_set_clean[,5:14] <- sweep(test_set_clean[,5:14], 2, min_features, "-")
+test_set_clean[,5:14] <- sweep(test_set_clean[,5:14], 2, diff, "/")
 
 
 ########
@@ -206,8 +206,6 @@ baseline <- lm(formula=hypothesis, data=train_set_clean)
 
 valPred <- predict(baseline, val_set_clean)
 trainPred <- predict(baseline, train_set_clean)
-testPred <- predict(baseline, test_set_clean)
-
 
 MAE <- function(preds, labels){
     mae_values <- sum(abs(preds-labels))/length(preds)
@@ -236,9 +234,7 @@ mse_val_baseline <- MSE(valPred, val_set_clean$target);mse_val_baseline
 r2_val_baseline <- R2(valPred, val_set_clean$target);r2_val_baseline
 
 
-mae_test_baseline <- MAE(testPred, test_set_clean$target);mae_test_baseline
-mse_test_baseline <- MSE(testPred, test_set_clean$target);mse_test_baseline
-r2_test_baseline <- R2(testPred, test_set_clean$target);r2_test_baseline
+
 
 ########
 # Criacao de modelos atraves da combinacao de features
@@ -290,12 +286,19 @@ h09 <- getHypothesis(feature_names, categorical_feature_names=wd_columns,degree=
 modelsCategorical <- c(h02, h03, h04, h05,h06, h07, h08, h09)
 total_mae_train_noCat <- c(length(modelsCategorical))
 total_mae_val_noCat <- c(length(modelsCategorical))
-total_mae_train_noCat <- c(length(modelsCategorical))
+
+total_mse_train_noCat <- c(length(modelsCategorical))
+total_mse_val_noCat <- c(length(modelsCategorical))
+
+
+total_r2_train_noCat <- c(length(modelsCategorical))
+total_r2_val_noCat <- c(length(modelsCategorical))
+
 
 i <- 1
 dataTrain <- train_set_clean
 dataVal <- val_set_clean
-dataTest <- test_set_clean
+
 
 for(f in modelsCategorical){
     
@@ -309,41 +312,63 @@ for(f in modelsCategorical){
     
     mae_val <- MAE(valPred, dataVal$target)
     total_mae_val_noCat[i] <- mae_val
+
+    mse_train <- MSE(trainPred, dataTrain$target)
+    total_mse_train_noCat[i] <- mse_train
     
-    mae_test <- MAE(testPred, dataVal$target)
-    total_mae_val_noCat[i] <- mae_val
+    mse_val <- MSE(valPred, dataVal$target)
+    total_mse_val_noCat[i] <- mse_val
     
+    r2_train <- R2(trainPred, dataTrain$target)
+    total_r2_train_noCat[i] <- r2_train
+    
+    r2_val <- R2(valPred, dataVal$target)
+    total_r2_val_noCat[i] <- r2_val
+
     
     i <- i + 1
     
 }
-
+r2_val
 summary(model)
 
 
 mae_train_comb <- total_mae_train_noCat[1:4];mae_train_comb
 mae_val_comb <- total_mae_val_noCat[1:4];mae_val_comb
 
+mse_train_comb <- total_mse_train_noCat[1:4];mse_train_comb
+mse_val_comb <- total_mse_val_noCat[1:4];mse_val_comb
+
+r2_train_comb <- total_r2_train_noCat[1:4];r2_train_comb
+r2_val_comb <- total_r2_val_noCat[1:4];r2_val_comb
+
 mae_train_poly <- total_mae_train_noCat[5:8];mae_train_poly
 mae_val_poly <- total_mae_val_noCat[5:8];mae_val_poly
+
+mse_train_poly <- total_mse_train_noCat[5:8];mse_train_poly
+mse_val_poly <- total_mse_val_noCat[5:8];mse_val_poly
+
+r2_train_poly <- total_r2_train_noCat[5:8];r2_train_poly
+r2_val_poly <- total_r2_val_noCat[5:8];r2_val_poly
+
 
 models_comb <- c('h02', 'h03', 'h04', 'h05');models_comb
 models_poly <- c('h06', 'h07', 'h08', 'h09');models_poly
 
 
 ########
-# Plotando curvas de erro x complexidade
+# Plotando curvas de erro x complexidade MAE
 plot(mae_train_comb, xlab="Degree", ylab="Error", 
-     ylim=c(280, 450), pch="+", col="blue",  xaxt="n")
-points(mae_val_comb, pch="+", col="red")
+     ylim=c(280, 450), pch="+", col="orange",  xaxt="n")
+points(mae_val_comb, pch="+", col="black")
 lines(mae_train_comb, col="orange", lty=1)
 lines(mae_val_comb, col="black", lty=1)
 
 
 points(mae_train_poly, pch="*", col="blue")
 points(mae_val_poly, pch="*", col="red")
-lines(mae_train_poly, col="red", lty=2)
-lines(mae_val_poly, col="blue", lty=2)
+lines(mae_train_poly, col="blue", lty=2)
+lines(mae_val_poly, col="red", lty=2)
 
 points(rep(mae_val_baseline, 4), pch="o", col="green")
 lines(rep(mae_val_baseline, 4), col="green", lty=1)
@@ -356,13 +381,63 @@ legend(450, y=NULL,
 
 ####
 
+# Plotando curvas de erro x complexidade MSE
+plot(mse_train_comb, xlab="Degree", ylab="Error", 
+     ylim=c(2300, 500000),pch="+", col="orange",  xaxt="n")
+points(mse_val_comb, pch="+", col="black")
+lines(mse_train_comb, col="orange", lty=1)
+lines(mse_val_comb, col="black", lty=1)
+mse_val_comb
+
+points(mse_train_poly, pch="*", col="blue")
+points(mse_val_poly, pch="*", col="red")
+lines(mse_train_poly, col="blue", lty=2)
+lines(mse_val_poly, col="red", lty=2)
+
+points(rep(mse_val_baseline, 4), pch="o", col="green")
+lines(rep(mse_val_baseline, 4), col="green", lty=1)
+
+axis(1, at=1:4, labels=c(2, 3, 5, 10), las=1)
+
+legend(450, y=NULL,
+       legend=c("Feature Combination Train", "Feature Combination Valid","Polynomials Train", "Polynomials Test","Baseline"), 
+       col=c("red","blue", "green"), lty=1, cex=0.8)
+
+####
 
 
-# Descomente a linha abaixo apenas quando o conjunto de teste esiver dispon?vel
-#test_set <- read.csv("test_set_air_quality.csv", stringsAsFactors=TRUE)
+# Plotando curvas de erro x complexidade R2
+plot(r2_train_comb, xlab="Degree", ylab="R2", 
+     ylim=c(0, 1), pch="+", col="orange",  xaxt="n")
+points(r2_val_comb, pch="+", col="black")
+lines(r2_train_comb, col="orange", lty=1)
+lines(r2_val_comb, col="black", lty=1)
 
 
+points(r2_train_poly, pch="*", col="blue")
+points(r2_val_poly, pch="*", col="red")
+lines(r2_train_poly, col="blue", lty=2)
+lines(r2_val_poly, col="red", lty=2)
+
+points(rep(r2_val_baseline, 4), pch="o", col="green")
+lines(rep(r2_val_baseline, 4), col="green", lty=1)
+
+axis(1, at=1:4, labels=c(2, 3, 5, 10), las=1)
+
+legend(450, y=NULL,
+       legend=c("Feature Combination Train", "Feature Combination Valid","Polynomials Train", "Polynomials Test","Baseline"), 
+       col=c("red","blue", "green"), lty=1, cex=0.8)
 
 
+######## A PARTIR DAQUI USANDO TEST SET ##########
+model <- lm(formula=h04, data=dataTrain)
+
+testPred <- predict(model, test_set_clean)
+mae_test <- MAE(testPred, dataTest$target);mae_test
+
+
+mse_test <- MSE(testPred, dataTest$target);mse_test
+
+r2_test <- R2(testPred, dataTest$target);r2_test
 
 
