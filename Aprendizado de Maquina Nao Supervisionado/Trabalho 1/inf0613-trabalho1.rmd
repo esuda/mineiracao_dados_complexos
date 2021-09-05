@@ -70,30 +70,21 @@ A frequencia dos ítens afeta o algoritmo pois quanto mais ítens distintos, mai
 Use o algoritmo `apriori` para minerar regras na base de dados fornecida. Experimente com pelo menos *3 conjuntos* de valores diferentes de suporte e confiança para encontrar regras de associação. Imprima as cinco regras com o maior suporte de cada conjunto escolhido.  Lembre-se de usar seu conhecimento sobre a base, obtido na questão anterior, para a escolha dos valores de suporte e confiança.
 
 ```{r atv2-code}
-# Conjunto 1: suporte =    e confiança =    
-regras <- apriori(data=Groceries, 
-                  parameter=list(supp=0.001, conf=0.15,minlen=2), 
-                  appearance=list(default="rhs", lhs="Coffee"),
-                  control=list(verbose=F))
-regras <- sort(regras, decreasing=TRUE, by="confidence")
+# Conjunto 1: suporte = 0.1   e confiança = 0.3
+regras <- apriori(transactions, parameter=list(supp=0.1, conf=0.1))
+regras <- sort(regras, decreasing=TRUE, by="support")
 inspect(regras[1:5])
 
 
-# Conjunto 2: suporte =    e confiança =    
- regras <- apriori(data=Groceries, 
-                  parameter=list(supp=0.001, conf=0.15,minlen=2), 
-                  appearance=list(default="rhs", lhs="Bread"),
-                  control=list(verbose=F))
-regras <- sort(regras, decreasing=TRUE, by="confidence")
+# Conjunto 2: suporte =  0.01  e confiança = 0.3
+regras <- apriori(transactions, parameter=list(supp=0.01, conf=0.1))
+regras <- sort(regras, decreasing=TRUE, by="support")
 inspect(regras[1:5])
 
 
-# Conjunto 3: suporte =    e confiança =    
-regras <- apriori(data=Groceries, 
-                  parameter=list(supp=0.001, conf=0.15,minlen=2), 
-                  appearance=list(default="rhs", lhs="Pastry"),
-                  control=list(verbose=F))
-regras <- sort(regras, decreasing=TRUE, by="confidence")
+# Conjunto 3: suporte =  0.000001  e confiança = 0.1
+regras <- apriori(transactions, parameter=list(supp=0.000001, conf=0.9))
+regras <- sort(regras, decreasing=TRUE, by="support")
 inspect(regras[1:5])
 
 
@@ -103,8 +94,10 @@ inspect(regras[1:5])
 a) Quais as regras mais interessantes geradas a partir dessa base? Justifique.
 
 **Resposta:** <!-- Escreva sua resposta abaixo -->
-
-
+Ao testar os parametros, percebemos que devido a lista ser ordernada à partir dos maiores suportes, variar o parametro suporte mínimo não faz diferença, para uma mesma confiança. 
+No terceiro conjunto, recuperamos as regras {Extra Salami or Feta}   => {Coffee} com confiança 0.9 e Extra Salami or Feta,Spanish Brunch} => {Coffee} com confiança 1.0, indicando 
+que 10 pontos percentuais a mais de pessoas preferem comprar Extra Salami or Feta juntamente com Spanish Brunch do que somente Extra Salami or Feta.
+Além disso, percebemos que {Bread,Extra Salami or Feta}   => {Salad} tem um lift de 39.08 o que pode indicar uma causalidade forte, e confiança = 1.0, ou seja, todos os pedidos contendo o lado esquerdo, compraram também o lado direito.
 <!-- Fim da resposta -->
 
 # Atividade 3 -- Medidas de Interesse (*3,5 pts*)
@@ -113,20 +106,28 @@ Vimos na aula que, mesmo após as podas do algoritmo `apriori`, ainda temos algu
 
 
 ```{r atv3-code}
+# Usando Conjunto 02
+
 # Compute as medidas de interesse 
 medidas <- interestMeasure(regras, 
                            c("confidence", "conviction",
                              "coverage", "support", 
-                             "oddsRatio", "leverage"), Groceries)
+                             "oddsRatio", "leverage"), transactions)
 
 
+regras@quality$index <- as.numeric(row.names(regras@quality))
+regras@quality<-cbind(regras@quality,medidas$oddsRatio,medidas$conviction)
 # Apresente as regras ordenadas por lift
-inspect(head(sort(regras, by="lift"), 5))
+lift<-inspect(head(sort(regras, by="lift")))
+#write.csv(lift,"./lift.csv")
 
 # Apresente as regras ordenadas por convicção
-inspect(sort(sort(regras, by="conviction"), by="confidence")[1:5])
-# Apresente as regras ordenadas por razão de chances
+conviction<-inspect(sort(head(regras, by="medidas$conviction")))
+#write.csv(conviction,"./conviction.csv")
 
+# Apresente as regras ordenadas por razão de chances
+odds_ratio<-inspect(sort(head(regras, by="medidas$oddsRatio")))
+#write.csv(odds_ratio,"./odds_ratio.csv")
 
 ```
 
@@ -135,7 +136,7 @@ inspect(sort(sort(regras, by="conviction"), by="confidence")[1:5])
 a) Quais as regras mais interessantes do conjunto? Justifique.
 
 **Resposta:** <!-- Escreva sua resposta abaixo -->
-
+Usando como base o Conjunto 02 (suporte =  0.01  e confiança = 0.3) ordenado por lift, percebemos que as regras  {Coke} => {Sandwich} e {Coffee,Soup} => {Sandwich} possuem um lift relativamente alto, indicando uma possível causalidade e uma confiança pouco acima de 25%, ou seja, em um quarto das transações esta regra é satisfeita.
 
 <!-- Fim da resposta -->
 
