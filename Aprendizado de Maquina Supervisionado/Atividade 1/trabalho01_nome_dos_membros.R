@@ -33,7 +33,9 @@
 
 # Vejam os exerc?cios 02 e 03 para ver o funcionamento 
 # de uma funcao similar a essa.
-setwd("/Users/nkuros/Documents/mineiracao_dados_complexos/Aprendizado de Maquina Supervisionado/Atividade 1")
+
+rm(list=ls())
+graphics.off()
 
 getHypothesis <- function(real_feature_names, categorical_feature_names=F, degree=3){
     
@@ -62,12 +64,10 @@ getHypothesis <- function(real_feature_names, categorical_feature_names=F, degre
 }
 
 # Comandos que leem os conjuntos de treino e de validacao
-rm(list=ls())
-graphics.off()
 
 train_set <- read.csv("./training_set_air_quality.csv", stringsAsFactors=TRUE)
 val_set <- read.csv("./validation_set_air_quality.csv", stringsAsFactors=TRUE)
-#test_set <- read.csv("test_set_air_quality.csv", stringsAsFactors=TRUE)
+test_set <- read.csv("./test_set_air_quality.csv", stringsAsFactors=TRUE)
 
 # Desenvolvam o trabalho a partir daqui, apos executarem os comandos a cima
 
@@ -84,10 +84,10 @@ library(reshape2)
 # 1.
 ########
 # Validacao se os conjuntos sao disjuntos
-
+## Ok, todos os conjuntos sao disjuntos
 merge(train_set, val_set)
-# merge(train_set, test_set)
-# merge(test_set, val_set)
+merge(train_set, test_set)
+merge(test_set, val_set)
 
 # Validacao de volumetria das bases
 summary(train_set)
@@ -98,9 +98,9 @@ summary(val_set)
 dim(val_set)
 colnames(val_set)
 
-# summary(test_set)
-# dim(test_set)
-# colnames(test_set)
+summary(test_set)
+dim(test_set)
+colnames(test_set)
 
 #########
 # Verificacao da categoria marcada como (OTHER) na coluna wd
@@ -143,11 +143,17 @@ onehot_features <- function(dataset, feature){
 }
 train_set <- onehot_features(train_set, 'wd')
 val_set <- onehot_features(val_set, 'wd')
+test_set <- onehot_features(test_set, 'wd')
 
 #########
 # Retiraremos a priori as variaveis No e RAIN para gerar nosso caso BASELINE
-train_set_clean <- train_set[, -which(names(train_set) %in% c('No', 'wd', 'RAIN'))]
-val_set_clean <- val_set[, -which(names(train_set) %in% c('No', 'wd', 'RAIN'))]
+train_set_clean <- train_set[, -which(names(train_set) %in% c('No', 'wd', 'RAIN', 'N'))]
+val_set_clean <- val_set[, -which(names(val_set) %in% c('No', 'wd', 'RAIN', 'N'))]
+test_set_clean <- test_set[, -which(names(test_set) %in% c('No', 'wd', 'RAIN', 'N'))]
+
+setdiff(colnames(train_set_clean), colnames(val_set_clean))
+setdiff(colnames(train_set_clean), colnames(test_set_clean))
+setdiff(colnames(val_set_clean), colnames(test_set_clean))
 
 # summary(train_set_clean)
 
@@ -167,9 +173,9 @@ summary(train_set_clean)
 val_set_clean[,5:13] <- sweep(val_set_clean[,5:13], 2, min_features, "-")
 val_set_clean[,5:13] <- sweep(val_set_clean[,5:13], 2, diff, "/")
 
-# testSet[,2:ncol(testSet)] <- sweep(testSet[,2:ncol(testSet)], 2, min_features, "-")
-# testSet[,2:ncol(testSet)] <- sweep(testSet[,2:ncol(testSet)], 2, diff, "/")
-# summary(testSet)
+test_set_clean[,5:13] <- sweep(test_set_clean[,5:13], 2, min_features, "-")
+test_set_clean[,5:13] <- sweep(test_set_clean[,5:13], 2, diff, "/")
+
 
 ########
 # Visualizacao dos dados apos normalizacao min max (Visualmente nao alterou muito a distribuicao)
@@ -186,9 +192,7 @@ ggplot(data=melt_train_set, aes(x=value))+
 
 ########
 # Para o onehot encoding, utilizar n-1 features de flags
-wd_columns <- unique(train_set$wd);wd_columns
-
-wd_columns <- as.character(wd_columns)[1:(length(wd_columns)-1)];wd_columns
+wd_columns <- c("NE","SE","SSE","SSW","NNE","SW","S","WNW","ESE","NNW","NW","W","E","ENE");wd_columns
 
 not_include <- c(wd_columns, 'target');not_include
 
@@ -202,8 +206,7 @@ baseline <- lm(formula=hypothesis, data=train_set_clean)
 
 valPred <- predict(baseline, val_set_clean)
 trainPred <- predict(baseline, train_set_clean)
-
-# testPred <- predict(baseline, testSet)
+testPred <- predict(baseline, test_set_clean)
 
 
 MAE <- function(preds, labels){
@@ -216,18 +219,33 @@ MSE <- function(preds, labels){
     return(mse_values)
 }
 
-mae_train_baseline <- MAE(trainPred, train_set_clean$target)
-mae_train_baseline
+R2 <- function(pred, true){
+    rss <- sum((pred - true) ^ 2)
+    tss <- sum((true - mean(true)) ^ 2)
+    r2 <- 1 - rss/tss
+    return(r2)
+}
 
-mae_val_baseline <- MAE(valPred, val_set_clean$target)
-mae_val_baseline
+mae_train_baseline <- MAE(trainPred, train_set_clean$target); mae_train_baseline
+mse_train_baseline <- MSE(trainPred, train_set_clean$target); mse_train_baseline
+r2_train_baseline <- R2(trainPred, train_set_clean$target);r2_train_baseline
+
+
+mae_val_baseline <- MAE(valPred, val_set_clean$target);mae_val_baseline
+mse_val_baseline <- MSE(valPred, val_set_clean$target);mse_val_baseline
+r2_val_baseline <- R2(valPred, val_set_clean$target);r2_val_baseline
+
+
+mae_test_baseline <- MAE(testPred, test_set_clean$target);mae_test_baseline
+mse_test_baseline <- MSE(testPred, test_set_clean$target);mse_test_baseline
+r2_test_baseline <- R2(testPred, test_set_clean$target);r2_test_baseline
 
 ########
 # Criacao de modelos atraves da combinacao de features
 h02 <- formula(target ~ I(year^1) + I(month^1) + I(day^1) + I(hour^1) + I(PM2.5^1) + 
                    I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + I(TEMP^1) + I(PRES^1) + 
                    I(DEWP^1) + I(WSPM^1) + I(WSW^1) + NE + SE + SSE + SSW + 
-                   NNE + SW + S + WNW + ESE + NNW + NW + W + E + ENE + N +
+                   NNE + SW + S + WNW + ESE + NNW + NW + W + E + ENE +
                    (
                        I(PM2.5^1) + I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + 
                        I(TEMP^1) + I(PRES^1) + I(DEWP^1) + I(WSPM^1) + I(WSW^1)
@@ -237,7 +255,7 @@ h02 <- formula(target ~ I(year^1) + I(month^1) + I(day^1) + I(hour^1) + I(PM2.5^
 h03 <- formula(target ~ I(year^1) + I(month^1) + I(day^1) + I(hour^1) + I(PM2.5^1) + 
                    I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + I(TEMP^1) + I(PRES^1) + 
                    I(DEWP^1) + I(WSPM^1) + I(WSW^1) + NE + SE + SSE + SSW + 
-                   NNE + SW + S + WNW + ESE + NNW + NW + W + E + ENE + N +
+                   NNE + SW + S + WNW + ESE + NNW + NW + W + E + ENE +
                    (
                        I(PM2.5^1) + I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + 
                            I(TEMP^1) + I(PRES^1) + I(DEWP^1) + I(WSPM^1) + I(WSW^1)
@@ -247,38 +265,39 @@ h03 <- formula(target ~ I(year^1) + I(month^1) + I(day^1) + I(hour^1) + I(PM2.5^
 h04 <- formula(target ~ I(year^1) + I(month^1) + I(day^1) + I(hour^1) + I(PM2.5^1) + 
                    I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + I(TEMP^1) + I(PRES^1) + 
                    I(DEWP^1) + I(WSPM^1) + I(WSW^1) + NE + SE + SSE + SSW + 
-                   NNE + SW + S + WNW + ESE + NNW + NW + W + E + ENE + N +
-                   (
-                       I(PM2.5^1) + I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + 
-                           I(TEMP^1) + I(PRES^1) + I(DEWP^1) + I(WSPM^1) + I(WSW^1)
-                   )^4
-)
-
-h05 <- formula(target ~ I(year^1) + I(month^1) + I(day^1) + I(hour^1) + I(PM2.5^1) + 
-                   I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + I(TEMP^1) + I(PRES^1) + 
-                   I(DEWP^1) + I(WSPM^1) + I(WSW^1) + NE + SE + SSE + SSW + 
-                   NNE + SW + S + WNW + ESE + NNW + NW + W + E + ENE + N +
+                   NNE + SW + S + WNW + ESE + NNW + NW + W + E + ENE +
                    (
                        I(PM2.5^1) + I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + 
                            I(TEMP^1) + I(PRES^1) + I(DEWP^1) + I(WSPM^1) + I(WSW^1)
                    )^5
 )
 
+h05 <- formula(target ~ I(year^1) + I(month^1) + I(day^1) + I(hour^1) + I(PM2.5^1) + 
+                   I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + I(TEMP^1) + I(PRES^1) + 
+                   I(DEWP^1) + I(WSPM^1) + I(WSW^1) + NE + SE + SSE + SSW + 
+                   NNE + SW + S + WNW + ESE + NNW + NW + W + E + ENE +
+                   (
+                       I(PM2.5^1) + I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + 
+                           I(TEMP^1) + I(PRES^1) + I(DEWP^1) + I(WSPM^1) + I(WSW^1)
+                   )^10
+)
+
 h06 <- getHypothesis(feature_names, categorical_feature_names=wd_columns,degree=2)
 h07 <- getHypothesis(feature_names, categorical_feature_names=wd_columns,degree=3)
-h08 <- getHypothesis(feature_names, categorical_feature_names=wd_columns,degree=4)
-h09 <- getHypothesis(feature_names, categorical_feature_names=wd_columns,degree=5)
-h10 <- getHypothesis(feature_names, categorical_feature_names=wd_columns,degree=10)
+h08 <- getHypothesis(feature_names, categorical_feature_names=wd_columns,degree=5)
+h09 <- getHypothesis(feature_names, categorical_feature_names=wd_columns,degree=10)
 
-modelsCategorical <- c(h02, h03, h04, h05,h06, h07, h08, h09, h10)
+modelsCategorical <- c(h02, h03, h04, h05,h06, h07, h08, h09)
 total_mae_train_noCat <- c(length(modelsCategorical))
 total_mae_val_noCat <- c(length(modelsCategorical))
+total_mae_train_noCat <- c(length(modelsCategorical))
 
 i <- 1
+dataTrain <- train_set_clean
+dataVal <- val_set_clean
+dataTest <- test_set_clean
+
 for(f in modelsCategorical){
-    
-    dataTrain <- train_set_clean
-    dataVal <- val_set_clean
     
     model <- lm(formula=f, data=dataTrain)
     
@@ -290,36 +309,49 @@ for(f in modelsCategorical){
     
     mae_val <- MAE(valPred, dataVal$target)
     total_mae_val_noCat[i] <- mae_val
+    
+    mae_test <- MAE(testPred, dataVal$target)
+    total_mae_val_noCat[i] <- mae_val
+    
+    
     i <- i + 1
     
 }
 
 summary(model)
 
-plot(total_mae_val_noCat[5:9], xlab="Complexity", ylab="Error", 
-     ylim=c(200, 500), pch="+", col="blue",  xaxt="n")
 
-points(total_mae_val_noCat[1:4], pch="+", col="blue")
+mae_train_comb <- total_mae_train_noCat[1:4];mae_train_comb
+mae_val_comb <- total_mae_val_noCat[1:4];mae_val_comb
 
-points(total_mae_train_noCat[5:9], pch="*", col="red")
-points(total_mae_train_noCat[1:4], pch="*", col="red")
+mae_train_poly <- total_mae_train_noCat[5:8];mae_train_poly
+mae_val_poly <- total_mae_val_noCat[5:8];mae_val_poly
 
-points(rep(mae_val_baseline, 5), pch="o", col="green")
+models_comb <- c('h02', 'h03', 'h04', 'h05');models_comb
+models_poly <- c('h06', 'h07', 'h08', 'h09');models_poly
 
-axis(1, at=1:length(modelsCategorical), labels=seq(from = 1, to = 9, by = 1), las=1)
+plot(mae_train_comb, xlab="Degree", ylab="Error", 
+     ylim=c(280, 400), pch="+", col="blue",  xaxt="n")
+points(mae_val_comb, pch="+", col="red")
+lines(mae_train_comb, col="orange", lty=2)
+lines(mae_val_comb, col="black", lty=2)
 
-lines(total_mae_train_noCat[1:4], col="orange", lty=2)
-lines(total_mae_val_noCat[1:4], col="black", lty=2)
 
-lines(total_mae_train_noCat[5:9], col="red", lty=2)
-lines(total_mae_val_noCat[5:9], col="blue", lty=2)
+points(mae_train_poly, pch="*", col="blue")
+points(mae_val_poly, pch="*", col="red")
+lines(mae_train_poly, col="red", lty=2)
+lines(mae_val_poly, col="blue", lty=2)
 
-lines(rep(mae_val_baseline, length(total_mae_val_noCat)), col="green", lty=2)
+points(rep(mae_val_baseline, 4), pch="o", col="green")
+lines(rep(mae_val_baseline, 4), col="green", lty=2)
+
+axis(1, at=1:4, labels=c(2, 3, 5, 10), las=1)
+
 legend(500, y=NULL, legend=c("Train", "Validation", "Baseline"), 
        col=c("red","blue", "green"), lty=2, cex=0.8)
 
-########
-# Criacao de modelos atraves da combinacao de polinomios
+
+r2_test_baseline <- R2(testPred, test_set_clean$target);r2_test_baseline
 
 
 

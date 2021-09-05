@@ -71,8 +71,8 @@ Use o algoritmo `apriori` para minerar regras na base de dados fornecida. Experi
 
 ```{r atv2-code}
 # Conjunto 1: suporte =    e confiança =    
-regras <- apriori(data=Groceries, 
-                  parameter=list(supp=0.001, conf=0.15,minlen=2), 
+regras <- apriori(data=transactions, 
+                  parameter=list(supp=0.5, conf=0.15,minlen=2), 
                   appearance=list(default="rhs", lhs="Coffee"),
                   control=list(verbose=F))
 regras <- sort(regras, decreasing=TRUE, by="confidence")
@@ -80,7 +80,7 @@ inspect(regras[1:5])
 
 
 # Conjunto 2: suporte =    e confiança =    
- regras <- apriori(data=Groceries, 
+ regras <- apriori(data=transactions, 
                   parameter=list(supp=0.001, conf=0.15,minlen=2), 
                   appearance=list(default="rhs", lhs="Bread"),
                   control=list(verbose=F))
@@ -89,7 +89,7 @@ inspect(regras[1:5])
 
 
 # Conjunto 3: suporte =    e confiança =    
-regras <- apriori(data=Groceries, 
+regras <- apriori(data=transactions, 
                   parameter=list(supp=0.001, conf=0.15,minlen=2), 
                   appearance=list(default="rhs", lhs="Pastry"),
                   control=list(verbose=F))
