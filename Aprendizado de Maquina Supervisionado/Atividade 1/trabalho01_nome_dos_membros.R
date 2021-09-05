@@ -330,11 +330,14 @@ mae_val_poly <- total_mae_val_noCat[5:8];mae_val_poly
 models_comb <- c('h02', 'h03', 'h04', 'h05');models_comb
 models_poly <- c('h06', 'h07', 'h08', 'h09');models_poly
 
+
+########
+# Plotando curvas de erro x complexidade
 plot(mae_train_comb, xlab="Degree", ylab="Error", 
-     ylim=c(280, 400), pch="+", col="blue",  xaxt="n")
+     ylim=c(280, 450), pch="+", col="blue",  xaxt="n")
 points(mae_val_comb, pch="+", col="red")
-lines(mae_train_comb, col="orange", lty=2)
-lines(mae_val_comb, col="black", lty=2)
+lines(mae_train_comb, col="orange", lty=1)
+lines(mae_val_comb, col="black", lty=1)
 
 
 points(mae_train_poly, pch="*", col="blue")
@@ -343,15 +346,15 @@ lines(mae_train_poly, col="red", lty=2)
 lines(mae_val_poly, col="blue", lty=2)
 
 points(rep(mae_val_baseline, 4), pch="o", col="green")
-lines(rep(mae_val_baseline, 4), col="green", lty=2)
+lines(rep(mae_val_baseline, 4), col="green", lty=1)
 
 axis(1, at=1:4, labels=c(2, 3, 5, 10), las=1)
 
-legend(500, y=NULL, legend=c("Train", "Validation", "Baseline"), 
-       col=c("red","blue", "green"), lty=2, cex=0.8)
+legend(450, y=NULL,
+       legend=c("Feature Combination Train", "Feature Combination Valid","Polynomials Train", "Polynomials Test","Baseline"), 
+       col=c("red","blue", "green"), lty=1, cex=0.8)
 
-
-r2_test_baseline <- R2(testPred, test_set_clean$target);r2_test_baseline
+####
 
 
 
