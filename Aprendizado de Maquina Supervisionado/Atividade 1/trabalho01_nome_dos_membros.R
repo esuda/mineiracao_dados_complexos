@@ -33,6 +33,8 @@
 
 # Vejam os exerc?cios 02 e 03 para ver o funcionamento 
 # de uma funcao similar a essa.
+#setwd("/Users/nkuros/Documents/mineiracao_dados_complexos/Aprendizado de Maquina Supervisionado/Atividade 1/")
+
 
 rm(list=ls())
 graphics.off()
@@ -91,7 +93,7 @@ merge(test_set, val_set)
 
 # Validacao de volumetria das bases
 summary(train_set)
-dim(train_set)
+colnames(train_set)
 colnames(train_set)
 
 summary(val_set)
@@ -234,7 +236,12 @@ mse_val_baseline <- MSE(valPred, val_set_clean$target);mse_val_baseline
 r2_val_baseline <- R2(valPred, val_set_clean$target);r2_val_baseline
 
 
+# Retirando RAIN
 
+train_set_clean <- train_set_clean[, -which(names(train_set_clean) %in% c('RAIN'))];colnames(train_set_clean)
+val_set_clean <- val_set_clean[, -which(names(val_set_clean) %in% c('RAIN'))]
+test_set_clean <- test_set_clean[, -which(names(test_set_clean) %in% c('RAIN'))]
+feature_names <- colnames(train_set_clean[, -which(names(train_set_clean) %in% not_include)]);feature_names
 
 ########
 # Criacao de modelos atraves da combinacao de features
@@ -247,6 +254,7 @@ h02 <- formula(target ~ I(year^1) + I(month^1) + I(day^1) + I(hour^1) + I(PM2.5^
                        I(TEMP^1) + I(PRES^1) + I(DEWP^1) + I(WSPM^1) + I(WSW^1)
                    )^2
                )
+
 
 h03 <- formula(target ~ I(year^1) + I(month^1) + I(day^1) + I(hour^1) + I(PM2.5^1) + 
                    I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + I(TEMP^1) + I(PRES^1) + 
@@ -283,13 +291,13 @@ h07 <- getHypothesis(feature_names, categorical_feature_names=wd_columns,degree=
 h08 <- getHypothesis(feature_names, categorical_feature_names=wd_columns,degree=5)
 h09 <- getHypothesis(feature_names, categorical_feature_names=wd_columns,degree=10)
 
+
 modelsCategorical <- c(h02, h03, h04, h05,h06, h07, h08, h09)
 total_mae_train_noCat <- c(length(modelsCategorical))
 total_mae_val_noCat <- c(length(modelsCategorical))
 
 total_mse_train_noCat <- c(length(modelsCategorical))
 total_mse_val_noCat <- c(length(modelsCategorical))
-
 
 total_r2_train_noCat <- c(length(modelsCategorical))
 total_r2_val_noCat <- c(length(modelsCategorical))
@@ -329,8 +337,9 @@ for(f in modelsCategorical){
     i <- i + 1
     
 }
-r2_val
-summary(model)
+
+
+
 
 
 mae_train_comb <- total_mae_train_noCat[1:4];mae_train_comb
@@ -342,6 +351,7 @@ mse_val_comb <- total_mse_val_noCat[1:4];mse_val_comb
 r2_train_comb <- total_r2_train_noCat[1:4];r2_train_comb
 r2_val_comb <- total_r2_val_noCat[1:4];r2_val_comb
 
+#
 mae_train_poly <- total_mae_train_noCat[5:8];mae_train_poly
 mae_val_poly <- total_mae_val_noCat[5:8];mae_val_poly
 
@@ -358,8 +368,9 @@ models_poly <- c('h06', 'h07', 'h08', 'h09');models_poly
 
 ########
 # Plotando curvas de erro x complexidade MAE
+#jpeg("mae.jpeg", quality = 75)
 plot(mae_train_comb, xlab="Degree", ylab="Error", 
-     ylim=c(280, 450), pch="+", col="orange",  xaxt="n")
+     ylim=c(280, 400), pch="+", col="orange",  xaxt="n")
 points(mae_val_comb, pch="+", col="black")
 lines(mae_train_comb, col="orange", lty=1)
 lines(mae_val_comb, col="black", lty=1)
@@ -375,15 +386,17 @@ lines(rep(mae_val_baseline, 4), col="green", lty=1)
 
 axis(1, at=1:4, labels=c(2, 3, 5, 10), las=1)
 
-legend(450, y=NULL,
+legend(400, y=NULL,
        legend=c("Feature Combination Train", "Feature Combination Valid","Polynomials Train", "Polynomials Test","Baseline"), 
-       col=c("red","blue", "green"), lty=1, cex=0.8)
+       col=c("orange","black","red","blue", "green"), lty=1, cex=0.8)
+#dev.off()
 
 ####
 
 # Plotando curvas de erro x complexidade MSE
+#jpeg("mse.jpeg", quality = 75)
 plot(mse_train_comb, xlab="Degree", ylab="Error", 
-     ylim=c(2300, 500000),pch="+", col="orange",  xaxt="n")
+     ylim=c(200000, 400000),pch="+", col="orange",  xaxt="n")
 points(mse_val_comb, pch="+", col="black")
 lines(mse_train_comb, col="orange", lty=1)
 lines(mse_val_comb, col="black", lty=1)
@@ -399,16 +412,18 @@ lines(rep(mse_val_baseline, 4), col="green", lty=1)
 
 axis(1, at=1:4, labels=c(2, 3, 5, 10), las=1)
 
-legend(450, y=NULL,
+legend(220000, y=NULL,
        legend=c("Feature Combination Train", "Feature Combination Valid","Polynomials Train", "Polynomials Test","Baseline"), 
-       col=c("red","blue", "green"), lty=1, cex=0.8)
+       col=c("orange","black","red","blue", "green"), lty=1, cex=0.8)
+
+#dev.off()
 
 ####
 
-
 # Plotando curvas de erro x complexidade R2
+#jpeg("r2.jpeg", quality = 75)
 plot(r2_train_comb, xlab="Degree", ylab="R2", 
-     ylim=c(0, 1), pch="+", col="orange",  xaxt="n")
+     ylim=c(.6, 1), pch="+", col="orange",  xaxt="n")
 points(r2_val_comb, pch="+", col="black")
 lines(r2_train_comb, col="orange", lty=1)
 lines(r2_val_comb, col="black", lty=1)
@@ -424,20 +439,19 @@ lines(rep(r2_val_baseline, 4), col="green", lty=1)
 
 axis(1, at=1:4, labels=c(2, 3, 5, 10), las=1)
 
-legend(450, y=NULL,
+legend(0.7, y=NULL,
        legend=c("Feature Combination Train", "Feature Combination Valid","Polynomials Train", "Polynomials Test","Baseline"), 
-       col=c("red","blue", "green"), lty=1, cex=0.8)
+       col=c("orange","black","red","blue", "green"), lty=1, cex=0.8)
+#dev.off()
 
 
-######## A PARTIR DAQUI USANDO TEST SET ##########
-model <- lm(formula=h04, data=dataTrain)
+######## A PARTIR DAQUI CALCULOS DE ERRO DO TEST SET ##########
+model <- lm(formula=h04, data=dataTest)
 
 testPred <- predict(model, test_set_clean)
-mae_test <- MAE(testPred, dataTest$target);mae_test
+mae_test <- MAE(testPred, test_set_clean$target);mae_test
 
+mse_test <- MSE(testPred, test_set_clean$target);mse_test
 
-mse_test <- MSE(testPred, dataTest$target);mse_test
-
-r2_test <- R2(testPred, dataTest$target);r2_test
-
+r2_test <- R2(testPred, test_set_clean$target);r2_test
 
