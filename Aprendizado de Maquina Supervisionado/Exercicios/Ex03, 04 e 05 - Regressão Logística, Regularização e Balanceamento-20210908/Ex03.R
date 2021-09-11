@@ -1,12 +1,11 @@
 ##########################################
 # MDC010 - Aprendizado Supervisionado 01 #
-# Exercício 03 - Regressão Logística     #
+# Exercï¿½cio 03 - Regressï¿½o Logï¿½stica     #
 ##########################################
 
 #install.packages("glmnet")
 #install.packages("caret")
 #install.packages("pROC")
-
 source("support_functions.R")
 
 set.seed(13)

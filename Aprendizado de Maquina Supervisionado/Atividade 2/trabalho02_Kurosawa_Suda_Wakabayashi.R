@@ -56,31 +56,24 @@ calculaMatrizConfusaoRelativa <- function(cm){
     return(cm_relative)  
 }
 
-getHypothesis <- function(real_feature_names, categorical_feature_names=F, degree=3){
+# Escreve a funcao de hipotese dada as features continuas e o 
+# respectivo grau polinomial
+getHypothesis <- function(feature_names, degree){
     
     hypothesis_string <- "hypothesis <- formula(target ~ "
     for(d in 1:degree){
-        for(i in 1:length(real_feature_names)){
+        for(i in 1:length(feature_names)){
             hypothesis_string <- paste(hypothesis_string, 
-                                       "I(", real_feature_names[i], "^", d, ") + ",
+                                       "I(", feature_names[i], "^", d, ") + ",
                                        sep = "")
         }
     }
-    
-    if(typeof(categorical_feature_names) != "logical"){
-        for(i in 1:length(categorical_feature_names)){
-            hypothesis_string <- paste(hypothesis_string, 
-                                       categorical_feature_names[i], " + ",
-                                       sep = "")
-        } 
-    }
-    
-    
     hypothesis_string <- substr(hypothesis_string, 1, nchar(hypothesis_string)-3)
     hypothesis_string <- paste(hypothesis_string, ")")
     hypothesis <- eval(parse(text=hypothesis_string))
     return(hypothesis)
 }
+
 
 getLoss <- function(y_true, y_pred){
     y_true <- as.numeric(y_true) - 1
@@ -121,8 +114,9 @@ library(caret)
 library(pROC)
 #### Tarefas
 
+#---
 # 1.
-########
+#---
 # Validacao se os conjuntos sao disjuntos
 ## Ok, todos os conjuntos sao disjuntos
 merge(train_set, val_set)
@@ -130,30 +124,38 @@ merge(train_set, val_set)
 #merge(test_set, val_set)
 
 # Validacao de volumetria das bases
-summary()
+
+#---------------------------------
+# Verificacao do dataset de treino
+#---------------------------------
+summary(train_set)
+dim(train_set)
+colnames(train_set)
 count(train_set[train_set$target == 0,])
 count(train_set[train_set$target == 1,])
-colnames(train_set)
-colnames(train_set)
-colSums()
-#percebemos que essas variáveis denotam em conjunto, a posição da proteina
-summary(train_set$end_position - train_set$start_position)
-ggplot(train_set$emini,
+
+
+#------------------------------------
+# Verificacao do dataset de validacao
+#------------------------------------
 summary(val_set)
 dim(val_set)
 colnames(val_set)
 count(val_set[val_set$target == 0,])
 count(val_set[val_set$target == 1,])
 
-summary(test_set)
-dim(test_set)
-colnames(test_set)
-count(test_set[test_set$target == 0,])
-count(test_set[test_set$target == 1,])
+#--------------------------------
+# Verificacao do dataset de teste
+#--------------------------------
+# summary(test_set)
+# dim(test_set)
+# colnames(test_set)
+# count(test_set[test_set$target == 0,])
+# count(test_set[test_set$target == 1,])
 
 #########
 # Visualizacao da distribuição das variaveis
-melt_train_set <- train_set[,]
+melt_train_set <- train_set
 melt_train_set <- melt(melt_train_set)
 
 p <- ggplot(data=melt_train_set, aes(x=value))+
@@ -169,23 +171,29 @@ max_features <- apply(train_set[,1:(ncol(train_set)-1)], 2, max); max_features
 
 diff <- max_features - min_features; diff
 
-train_set[,1:10] <- sweep(train_set[,1:(ncol(train_set)-1)], 2, min_features, "-")
-train_set[,1:10] <- sweep(train_set[,1:(ncol(train_set)-1)], 2, diff, "/")
+train_set[,1:(ncol(train_set)-1)] <- sweep(train_set[,1:(ncol(train_set)-1)], 2, min_features, "-")
+train_set[,1:(ncol(train_set)-1)] <- sweep(train_set[,1:(ncol(train_set)-1)], 2, diff, "/")
 summary(train_set)
 
-val_set[,1:10] <- sweep(val_set[,1:1(ncol(val_set)-1)], 2, min_features, "-")
-val_set[,1:10] <- sweep(val_set[,1:(ncol(val_set)-1)], 2, diff, "/")
-
+val_set[,1:(ncol(val_set)-1)] <- sweep(val_set[,1:(ncol(val_set)-1)], 2, min_features, "-")
+val_set[,1:(ncol(val_set)-1)] <- sweep(val_set[,1:(ncol(val_set)-1)], 2, diff, "/")
+summary(val_set)
 #test_set[,] <- sweep(test_set[,1:(ncol(test_set)-1)], 2, min_features, "-")
 #test_set[,] <- sweep(test_set[,1:(ncol(test_set)-1)], 2, diff, "/")
 
+#--------------------------------------------
+# Transformando target em variável categorica
+#--------------------------------------------
 train_set$target <- as.factor(train_set$target)
 val_set$target <- as.factor(val_set$target)
-test_set$target <- as.factor(test_set$target)
-head(train_set)
-########
+#test_set$target <- as.factor(test_set$target)
+
+
+
+#------------------------------------------------------------------------------------------------
 # Visualizacao dos dados apos normalizacao min max (Visualmente nao alterou muito a distribuicao)
-melt_train_set <- val_set[,]
+#------------------------------------------------------------------------------------------------
+melt_train_set <- val_set
 melt_train_set <- melt(melt_train_set)
 
 ggplot(data=melt_train_set, aes(x=value))+
@@ -193,22 +201,21 @@ ggplot(data=melt_train_set, aes(x=value))+
     facet_wrap(~variable, scales='free')
 
 
+#---------
+# Baseline
+#---------
 
-## Baseline ##
-# Treinando o Modelo - Classificação #
-
+# ITERACAO 1 - Validacao Balancemento
+# Treinando o Modelo - targetificação #
 feature_names <- colnames(train_set)[1:(ncol(train_set)-1)]
 feature_names
 
-#gerando uma função com features a primeira potência para regressão logística
+# Gerando uma função com features a primeira potência para regressão logística
 hypothesis <- getHypothesis(feature_names, 1)
 hypothesis
 
-#help(glmnet) <- doc da regressão logística
-
 x_train <- model.matrix(hypothesis, train_set)
 y_train <- train_set$target
-
 
 model <- glmnet(x_train,
                 y_train, 
@@ -216,7 +223,7 @@ model <- glmnet(x_train,
                 standardize = FALSE,
                 maxit = 1e+05,
                 alpha=0, #tipo de regularização L2, 1 = l1
-                lambda = 1e-2
+                lambda = 1e-6
                 )
 
 ### Verificando os thetas aprendidos ###
@@ -224,20 +231,18 @@ model$beta
 model$a0 # valor do theta0 (intercept)
 
 #Previsões
-
 trainPred <- predict(model, newx = x_train, type="response")
 head(trainPred)
 
-
-#Convertendo para classes
-trainClassPred <- trainPred
+#Convertendo para targets
+traintargetPred <- trainPred
 
 #Modificando para Limiar 0.5 , retorno de 0 ou 1
 threshold <- 0.5
-trainClassPred[trainPred >= threshold] <- 1
-trainClassPred[trainPred < threshold] <- 0
+traintargetPred[trainPred >= threshold] <- 1
+traintargetPred[trainPred < threshold] <- 0
 
-trainClassPred
+traintargetPred
 
 #Valor de loss
 lossN = getLoss(train_set$target[train_set$target == 0], trainPred[train_set$target == 0])
@@ -249,11 +254,9 @@ lossP
 
 #Matriz de confusão 
 
-cm <- confusionMatrix(data = as.factor(trainClassPred), 
+cm <- confusionMatrix(data = as.factor(traintargetPred), 
                       reference = as.factor(train_set$target), 
                       positive='1')
-cm
-
 cm$table
 
 
@@ -261,319 +264,639 @@ cm_relative <- calculaMatrizConfusaoRelativa(cm)
 cm_relative
 
 ### Predicao no conjunto de validacao ###
-x_val <- model.matrix(hypothesis, valSet)
-y_val <- valSet$class
+x_val <- model.matrix(hypothesis, val_set)
+y_val <- val_set$target
 valPred <- predict(model, newx = x_val, type="response")
 
 #valPred
 
-#converting to class
-valClassPred <- valPred
+#converting to target
+valtargetPred <- valPred
 
 
 #### THRESHOLD ####
 # Threshold = 0.5 
-valClassPred[valPred >= 0.5] <- 1
-valClassPred[valPred < 0.5] <- 0
+valtargetPred[valPred >= 0.5] <- 1
+valtargetPred[valPred < 0.5] <- 0
 #matriz transposta relativa
 cm_relative <- calculaMatrizConfusaoRelativa(cm)
 cm_relative
 
 
-acc_bal_baseline <- (cm_relative[1,1] + cm_relative[2,2])/2
-acc_bal_baseline
+acc_baseline <- (cm_relative[1,1] + cm_relative[2,2])/2
+acc_baseline
+
+
+
+##### Let's see how well we did
+#Loss 
+lossN = getLoss(val_set$target[val_set$target == 0], valPred[val_set$target == 0])
+lossP = getLoss(val_set$target[val_set$target == 1], valPred[val_set$target == 1])
+lossN
+lossP
+loss_baseline <- (lossN+lossP)/2
+loss_baseline
+
+cm <- confusionMatrix(data = as.factor(valtargetPred), 
+                      reference = as.factor(val_set$target), 
+                      positive='1')
+
+
+cm_relative <- calculaMatrizConfusaoRelativa(cm)
+cm_relative
+
+acc_baseline <- (cm_relative[1,1] + cm_relative[2,2])/2
+acc_baseline
 
 # ROC Curve for baseline
-ROC <- roc(val_set$target, val_set[,1], direction="<")
+ROC <- roc(val_set$target, valPred[,1], direction="<")
 ROC
 
+plot(ROC, col="blue", lwd=2, main="ROC")
+
+#-----------------------------------------------
+# Balanceamento por ponderacao da funcao de erro
+#-----------------------------------------------
+
+target_frequency = table(train_set$target)
+target_frequency
+
+relative_target_frequency = target_frequency/sum(target_frequency)
+relative_target_frequency
+
+w_positive = 1 - relative_target_frequency[2]
+w_negative = 1 - relative_target_frequency[1]
+
+w_positive
+w_negative
+
+# Inicializando com zeros o vetor de pesos
+weights <- rep(0.0, dim(train_set)[1])
+
+# Associando o peso dos positivos (w_positive) aos respectivos exemplos
+weights[train_set$target == 1] = w_positive 
+
+# Associando o peso dos negatives (w_negative) aos respectivos exemplos
+weights[train_set$target == 0] = w_negative 
+
+x_train <- model.matrix(hypothesis, train_set)
+y_train <- train_set$target
+
+logRegModel_weighting <- glmnet(x_train, y_train,  family="binomial",
+                                   weights = weights,
+                                   standardize = FALSE, alpha=0, lambda = 1e-6)
 
 
-####################
-#### TO-DO
-#### 1- Combinação de variáveis
-#### 2- Balanceamento
-#### 3- Regressão logística Regularização
+x_val <- model.matrix(hypothesis, val_set)
+y_val <- val_set$target
+valPred <- predict(logRegModel_weighting, newx = x_val, type="response")
+
+valtargetPred <- valPred
+
+#### THRESHOLD ####
+# Threshold = 0.5 
+valtargetPred[valPred >= 0.5] <- 1
+valtargetPred[valPred < 0.5] <- 0
+#matriz transposta relativa
+cm_relative <- calculaMatrizConfusaoRelativa(cm)
+cm_relative
 
 
-baseline <- lm(formula=hypothesis, data=train_set)
+acc_baseline <- (cm_relative[1,1] + cm_relative[2,2])/2
+acc_baseline
 
-valPred <- predict(baseline, val_set)
-trainPred <- predict(baseline, train_set)
 
-MAE <- function(preds, labels){
-    mae_values <- sum(abs(preds-labels))/length(preds)
-    return(mae_values)
+
+##### Let's see how well we did
+#Loss 
+lossN = getLoss(val_set$target[val_set$target == 0], valPred[val_set$target == 0])
+lossP = getLoss(val_set$target[val_set$target == 1], valPred[val_set$target == 1])
+lossN
+lossP
+loss_baseline <- (lossN+lossP)/2
+loss_baseline
+
+cm <- confusionMatrix(data = as.factor(valtargetPred), 
+                      reference = as.factor(val_set$target), 
+                      positive='1')
+
+
+cm_relative <- calculaMatrizConfusaoRelativa(cm)
+cm_relative
+
+acc_baseline <- (cm_relative[1,1] + cm_relative[2,2])/2
+acc_baseline
+
+# ROC Curve for baseline
+ROC <- roc(val_set$target, valPred[,1], direction="<")
+ROC
+
+plot(ROC, col="blue", lwd=2, main="ROC")
+
+
+
+############# Analise Polinomial ###########
+loss_train <- c()
+loss_val <- c()
+
+acc_train <- c()
+acc_val <- c()
+
+feature_names <- colnames(train_set)[1:(ncol(train_set)-1)]
+
+## Polynomial Analysis
+### Be careful! Higher polynomial degrees might not converge!
+for(i in 1:5){  
+    
+    print(i)
+    hypothesis <- getHypothesis(feature_names, i)
+    
+    # Applying hypothesis and training the model
+    x_train <- model.matrix(hypothesis, train_set)
+    y_train <- train_set$target
+    model <- glmnet(x_train, y_train,  family="binomial", 
+                    standardize = FALSE, maxit = 1e+05, 
+                    weights = weights,
+                    alpha=0, lambda = 1e-6)
+    
+    trainPred <- predict(model, newx = x_train, type="response")
+    
+    #converting to target
+    traintargetPred <- trainPred
+    
+    #### THRESHOLD ####
+    # Threshold = 0.5 
+    traintargetPred[trainPred >= 0.5] <- 1
+    traintargetPred[trainPred < 0.5] <- 0
+    #traintargetPred
+    
+    lossN = getLoss(train_set$target[train_set$target == 0], trainPred[train_set$target == 0])
+    lossP = getLoss(train_set$target[train_set$target == 1], trainPred[train_set$target == 1])
+    mean_loss_train <- (lossN+lossP)/2
+    
+    cm <- confusionMatrix(data = as.factor(traintargetPred), 
+                          reference = as.factor(train_set$target), 
+                          positive='1')
+    
+    
+    cm_relative <- calculaMatrizConfusaoRelativa(cm)
+    acc_bal_train <- (cm_relative[1,1] + cm_relative[2,2])/2
+ 
+    # Validation
+    x_val <- model.matrix(hypothesis, val_set)
+    y_val <- val_set$target
+    valPred <- predict(model, newx = x_val, type="response")
+    
+    #converting to target
+    valtargetPred <- valPred
+    
+    #### THRESHOLD ####
+    # Threshold = 0.5 
+    valtargetPred[valPred >= 0.5] <- 1
+    valtargetPred[valPred < 0.5] <- 0
+    
+    ##### Let's see how well we did
+    #Loss 
+    lossN = getLoss(val_set$target[val_set$target == 0], valPred[val_set$target == 0])
+    lossP = getLoss(val_set$target[val_set$target == 1], valPred[val_set$target == 1])
+    mean_loss_val <- (lossN+lossP)/2
+    mean_loss_val
+    
+    cm <- confusionMatrix(data = as.factor(valtargetPred), 
+                          reference = as.factor(val_set$target), 
+                          positive='1')
+    
+    cm_relative <- calculaMatrizConfusaoRelativa(cm)
+    acc_bal_val <- (cm_relative[1,1] + cm_relative[2,2])/2
+    
+    loss_train[i] <- mean_loss_train
+    loss_val[i] <- mean_loss_val
+    
+    acc_train[i] <- acc_bal_train 
+    acc_val[i] <- acc_bal_val 
 }
 
-MSE <- function(preds, labels){
-    mse_values <- sum((preds-labels)**2)/length(preds)
-    return(mse_values)
-}
-
-R2 <- function(pred, true){
-    rss <- sum((pred - true) ^ 2)
-    tss <- sum((true - mean(true)) ^ 2)
-    r2 <- 1 - rss/tss
-    return(r2)
-}
-
-mae_train_baseline <- MAE(trainPred, train_set$target); mae_train_baseline
-mse_train_baseline <- MSE(trainPred, train_set$target); mse_train_baseline
-r2_train_baseline <- R2(trainPred, train_set$target);r2_train_baseline
+############# Plotting Loss ############
+plot(loss_train, xlab="Complexity", ylab="Loss", 
+     pch="+", col="red",  xaxt="n", 
+     ylim=c(min(c(loss_train, loss_val,loss_baseline)),
+            max(c(loss_train, loss_val,loss_baseline))))
 
 
-mae_val_baseline <- MAE(valPred, val_set$target);mae_val_baseline
-mse_val_baseline <- MSE(valPred, val_set$target);mse_val_baseline
-r2_val_baseline <- R2(valPred, val_set$target);r2_val_baseline
+axis(1, at=1:5, labels=seq(from = 1, to = 5, by = 1), las=1)
+points(loss_val, pch="*", col="blue")
+points(rep(loss_baseline, length(loss_val)), pch="o", col="green")
+
+lines(loss_train, col="red", lty=2)
+lines(loss_val, col="blue", lty=2)
+lines(rep(loss_baseline, length(loss_val)), col="green", lty=2)
+legend(2.3, 0.465, legend=c("Train", "Validation", "Baseline"),
+       col=c("red","blue","green"), lty=2, cex=0.7)
+
+############ Ploting Acc Balanced ############
+plot(acc_train, xlab="Complexity", ylab="Balanced Accuracy", 
+     pch="+", col="red",  xaxt="n", 
+     ylim=c(min(c(acc_train, acc_val,acc_baseline)),
+            max(c(acc_train, acc_val,acc_baseline))))
+
+axis(1, at=1:5, labels=seq(from = 1, to = 5, by = 1), las=1)
+points(acc_val, pch="*", col="blue")
+points(rep(acc_baseline, length(acc_val)), pch="o", col="green")
+
+lines(acc_train, col="red", lty=2)
+lines(acc_val, col="blue", lty=2)
+lines(rep(acc_baseline, length(acc_val)), col="green", lty=2)
+legend(1.0, 0.81, legend=c("Train", "Validation", "Baseline"),
+       col=c("red","blue","green"), lty=2, cex=0.7)
 
 
-# Retirando RAIN
+#### Testing #### 
+i<- which.max(acc_val)
+i
 
-train_set <- train_set[, -which(names(train_set) %in% c('RAIN'))];colnames(train_set)
-val_set <- val_set[, -which(names(val_set) %in% c('RAIN'))]
-test_set <- test_set[, -which(names(test_set) %in% c('RAIN'))]
-feature_names <- colnames(train_set[, -which(names(train_set) %in% not_include)]);feature_names
+hypothesis <- getHypothesis(feature_names, i)
 
-########
-# Criacao de modelos atraves da combinacao de features
-h02 <- formula(target ~ I(year^1) + I(month^1) + I(day^1) + I(hour^1) + I(PM2.5^1) + 
-                   I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + I(TEMP^1) + I(PRES^1) + 
-                   I(DEWP^1) + I(WSPM^1) + I(WSW^1) + NE + SE + SSE + SSW + 
-                   NNE + SW + S + WNW + ESE + NNW + NW + W + E + ENE +
-                   (
-                       I(PM2.5^1) + I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + 
-                       I(TEMP^1) + I(PRES^1) + I(DEWP^1) + I(WSPM^1) + I(WSW^1)
-                   )^2
-               )
+x_train <- model.matrix(hypothesis, train_set)
+y_train <- train_set$target
+model <- glmnet(x_train, y_train,  family="binomial", standardize = FALSE, 
+                alpha=0, maxit = 1e+05, trace.it=1, lambda = 1e-6, weights = weights)
 
+trainPred <- predict(model, newx = x_train, type="response")
 
-h03 <- formula(target ~ I(year^1) + I(month^1) + I(day^1) + I(hour^1) + I(PM2.5^1) + 
-                   I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + I(TEMP^1) + I(PRES^1) + 
-                   I(DEWP^1) + I(WSPM^1) + I(WSW^1) + NE + SE + SSE + SSW + 
-                   NNE + SW + S + WNW + ESE + NNW + NW + W + E + ENE +
-                   (
-                       I(PM2.5^1) + I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + 
-                           I(TEMP^1) + I(PRES^1) + I(DEWP^1) + I(WSPM^1) + I(WSW^1)
-                   )^3
-)
+x_test <- model.matrix(hypothesis, test_set)
+y_test <- test_set$target
+testPred <- predict(model, newx = x_test, type="response")
 
-h04 <- formula(target ~ I(year^1) + I(month^1) + I(day^1) + I(hour^1) + I(PM2.5^1) + 
-                   I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + I(TEMP^1) + I(PRES^1) + 
-                   I(DEWP^1) + I(WSPM^1) + I(WSW^1) + NE + SE + SSE + SSW + 
-                   NNE + SW + S + WNW + ESE + NNW + NW + W + E + ENE +
-                   (
-                       I(PM2.5^1) + I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + 
-                           I(TEMP^1) + I(PRES^1) + I(DEWP^1) + I(WSPM^1) + I(WSW^1)
-                   )^5
-)
+#converting to target
+testtargetPred <- testPred
 
-h05 <- formula(target ~ I(year^1) + I(month^1) + I(day^1) + I(hour^1) + I(PM2.5^1) + 
-                   I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + I(TEMP^1) + I(PRES^1) + 
-                   I(DEWP^1) + I(WSPM^1) + I(WSW^1) + NE + SE + SSE + SSW + 
-                   NNE + SW + S + WNW + ESE + NNW + NW + W + E + ENE +
-                   (
-                       I(PM2.5^1) + I(PM10^1) + I(SO2^1) + I(NO2^1) + I(O3^1) + 
-                           I(TEMP^1) + I(PRES^1) + I(DEWP^1) + I(WSPM^1) + I(WSW^1)
-                   )^10
-)
+#### THRESHOLD ####
+# Threshold = 0.5 
+testtargetPred[testPred >= 0.5] <- 1
+testtargetPred[testPred < 0.5] <- 0
 
-h06 <- getHypothesis(feature_names, categorical_feature_names=wd_columns,degree=2)
-h07 <- getHypothesis(feature_names, categorical_feature_names=wd_columns,degree=3)
-h08 <- getHypothesis(feature_names, categorical_feature_names=wd_columns,degree=5)
-h09 <- getHypothesis(feature_names, categorical_feature_names=wd_columns,degree=10)
+##### Let's see how good the model performs
+#Loss 
+lossN = getLoss(test_set$target[test_set$target == 0], testPred[test_set$target == 0])
+lossP = getLoss(test_set$target[test_set$target == 1], testPred[test_set$target == 1])
+mean_loss_test <- (lossN+lossP)/2
+mean_loss_test 
 
 
-modelsCategorical <- c(h02, h03, h04, h05,h06, h07, h08, h09)
-total_mae_train_noCat <- c(length(modelsCategorical))
-total_mae_val_noCat <- c(length(modelsCategorical))
+cm <- confusionMatrix(data = as.factor(testtargetPred), 
+                      reference = as.factor(test_set$target), 
+                      positive='1')
 
-total_mse_train_noCat <- c(length(modelsCategorical))
-total_mse_val_noCat <- c(length(modelsCategorical))
+cm_relative <- calculaMatrizConfusaoRelativa(cm)
+cm_relative
 
-total_r2_train_noCat <- c(length(modelsCategorical))
-total_r2_val_noCat <- c(length(modelsCategorical))
+acc_test_bal <- (cm_relative[1,1] + cm_relative[2,2])/2
+acc_test_bal
 
+
+
+
+
+
+
+
+
+
+
+############ Combining Features ###########
+cor(train_set[1:(ncol(train_set)-1)])
+
+f01 <- formula(target ~ .)
+
+f02 <- formula(target ~ . + (start_position+end_position+chou_fasman+emini+kolaskar_tongaonkar+parker+isoelectric_point+aromaticity+hydrophobicity+stability)^2)
+
+f03 <- formula(target ~ . + (start_position+end_position+chou_fasman+emini+kolaskar_tongaonkar+parker+isoelectric_point+aromaticity+hydrophobicity+stability)^3)
+
+f04 <- formula(target ~ . + (start_position+end_position+chou_fasman+emini+kolaskar_tongaonkar+parker+isoelectric_point+aromaticity+hydrophobicity+stability)^4)
+
+f05 <- formula(target ~ . + (start_position+end_position+chou_fasman+emini+kolaskar_tongaonkar+parker+isoelectric_point+aromaticity+hydrophobicity+stability)^5)
+
+f06 <- formula(target ~ . + (start_position+end_position+chou_fasman+emini+kolaskar_tongaonkar+parker+isoelectric_point+aromaticity+hydrophobicity+stability)^6)
+
+
+formulas <- c(f01, f02, f03, f04, f05, f06)
+
+loss_train <- c()
+loss_val <- c()
+
+acc_train <- c()
+acc_val <- c()
 
 i <- 1
-dataTrain <- train_set
-dataVal <- val_set
+for(f in formulas){  
+    
+    
+    # Applying hypothesis and training the model
+    x_train <- model.matrix(f, train_set)
+    y_train <- train_set$target
+    model <- glmnet(x_train, y_train,  family="binomial", 
+                    standardize = FALSE, maxit = 1e+05, weights = weights,
+                    alpha=0, lambda = 1e-6)
+    
+    trainPred <- predict(model, newx = x_train, type="response")
+    
+    #converting to target
+    traintargetPred <- trainPred
+    
+    #### THRESHOLD ####
+    # Threshold = 0.5 
+    traintargetPred[trainPred >= 0.5] <- 1
+    traintargetPred[trainPred < 0.5] <- 0
+    #traintargetPred
+    
+    lossN = getLoss(train_set$target[train_set$target == 0], trainPred[train_set$target == 0])
+    lossP = getLoss(train_set$target[train_set$target == 1], trainPred[train_set$target == 1])
+    mean_loss_train <- (lossN+lossP)/2
+    print(mean_loss_train)
+    
+    cm <- confusionMatrix(data = as.factor(traintargetPred), 
+                          reference = as.factor(train_set$target), 
+                          positive='1')
+    
+    
+    cm_relative <- calculaMatrizConfusaoRelativa(cm)
+    acc_bal_train <- (cm_relative[1,1] + cm_relative[2,2])/2
+    
+    
+    # Validation
+    x_val <- model.matrix(f, val_set)
+    y_val <- val_set$target
+    valPred <- predict(model, newx = x_val, type="response")
+    
+    #converting to target
+    valtargetPred <- valPred
+    
+    #### THRESHOLD ####
+    # Threshold = 0.5 
+    valtargetPred[valPred >= 0.5] <- 1
+    valtargetPred[valPred < 0.5] <- 0
+    
+    ##### Let's see how well we did
+    #Loss 
+    lossN = getLoss(val_set$target[val_set$target == 0], valPred[val_set$target == 0])
+    lossP = getLoss(val_set$target[val_set$target == 1], valPred[val_set$target == 1])
+    mean_loss_val <- (lossN+lossP)/2
+    
+    
+    cm <- confusionMatrix(data = as.factor(valtargetPred), 
+                          reference = as.factor(val_set$target), 
+                          positive='1')
+    
+    cm_relative <- calculaMatrizConfusaoRelativa(cm)
+    acc_bal_val <- (cm_relative[1,1] + cm_relative[2,2])/2
+    
+    loss_train[i] <- mean_loss_train
+    loss_val[i] <- mean_loss_val
+    
+    acc_train[i] <- acc_bal_train 
+    acc_val[i] <- acc_bal_val 
+    
+    i <- i + 1
+}
+
+############# Plotting Loss ############
+plot(loss_train, xlab="Complexity", ylab="Loss", 
+     pch="+", col="red",  xaxt="n", 
+     ylim=c(min(c(loss_train, loss_val,loss_baseline)),
+            max(c(loss_train, loss_val,loss_baseline))))
 
 
-for(f in modelsCategorical){
-    
-    model <- lm(formula=f, data=dataTrain)
-    
-    valPred <- predict(model, dataVal)
-    trainPred <- predict(model, dataTrain)
-    
-    mae_train <- MAE(trainPred, dataTrain$target)
-    total_mae_train_noCat[i] <- mae_train
-    
-    mae_val <- MAE(valPred, dataVal$target)
-    total_mae_val_noCat[i] <- mae_val
+axis(1, at=1:6, labels=seq(from = 1, to = 6, by = 1), las=1)
+points(loss_val, pch="*", col="blue")
+points(rep(loss_baseline, length(loss_val)), pch="o", col="green")
 
-    mse_train <- MSE(trainPred, dataTrain$target)
-    total_mse_train_noCat[i] <- mse_train
-    
-    mse_val <- MSE(valPred, dataVal$target)
-    total_mse_val_noCat[i] <- mse_val
-    
-    r2_train <- R2(trainPred, dataTrain$target)
-    total_r2_train_noCat[i] <- r2_train
-    
-    r2_val <- R2(valPred, dataVal$target)
-    total_r2_val_noCat[i] <- r2_val
+lines(loss_train, col="red", lty=2)
+lines(loss_val, col="blue", lty=2)
+lines(rep(loss_baseline, length(loss_val)), col="green", lty=2)
+legend(3.0, 0.48, legend=c("Train", "Validation", "Baseline"),
+       col=c("red","blue","green"), lty=2, cex=0.7)
 
+############ Ploting Acc Balanced ############
+plot(acc_train, xlab="Complexity", ylab="Balanced Accuracy", 
+     pch="+", col="red",  xaxt="n", 
+     ylim=c(min(c(acc_train, acc_val,acc_baseline)),
+            max(c(acc_train, acc_val,acc_baseline))))
+
+axis(1, at=1:6, labels=seq(from = 1, to = 6, by = 1), las=1)
+points(acc_val, pch="*", col="blue")
+points(rep(acc_baseline, length(acc_val)), pch="o", col="green")
+
+lines(acc_train, col="red", lty=2)
+lines(acc_val, col="blue", lty=2)
+lines(rep(acc_baseline, length(acc_val)), col="green", lty=2)
+legend(1.0, 0.835, legend=c("Train", "Validation", "Baseline"),
+       col=c("red","blue","green"), lty=2, cex=0.7)
+
+
+#### Testing #### 
+i<- which.max(acc_val)
+
+f <- formulas[[i]]
+x_train <- model.matrix(f, train_set)
+y_train <- train_set$target
+model <- glmnet(x_train, y_train,  family="binomial", standardize = FALSE, 
+                alpha=0, maxit = 1e+05, trace.it=1, lambda = 1e-6)
+
+
+x_test <- model.matrix(f, test_set)
+y_test <- test_set$target
+testPred <- predict(model, newx = x_test, type="response")
+
+#converting to target
+testtargetPred <- testPred
+
+#### THRESHOLD ####
+# Threshold = 0.5 
+testtargetPred[testPred >= 0.5] <- 1
+testtargetPred[testPred < 0.5] <- 0
+
+##### Let's see how good the model performs
+#Loss 
+lossN = getLoss(test_set$target[test_set$target == 0], testPred[test_set$target == 0])
+lossP = getLoss(test_set$target[test_set$target == 1], testPred[test_set$target == 1])
+mean_loss_test <- (lossN+lossP)/2
+mean_loss_test
+
+
+cm <- confusionMatrix(data = as.factor(testtargetPred), 
+                      reference = as.factor(test_set$target), 
+                      positive='1')
+
+cm_relative <- calculaMatrizConfusaoRelativa(cm)
+cm_relative
+acc_bal_test <- (cm_relative[1,1] + cm_relative[2,2])/2
+acc_bal_test
+
+
+#----------------------------------------------
+# Teste de Regularizacao com diferentes Lambdas
+#----------------------------------------------
+loss_train <- c()
+loss_val <- c()
+
+acc_train <- c()
+acc_val <- c()
+
+lambda_values <- c(1.0, 0.1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6)
+
+i <- 1
+for(l in lambda_values){
     
+    print(l)
+    # Applying hypothesis and training the model
+    x_train <- model.matrix(hypothesis, train_set)
+    y_train <- train_set$target
+    model <- glmnet(x_train, y_train,  family="binomial", 
+                    standardize = FALSE, maxit = 1e+05, 
+                    weights = weights,
+                    alpha=0, lambda = l)
+    
+    trainPred <- predict(model, newx = x_train, type="response")
+    
+    #converting to target
+    traintargetPred <- trainPred
+    
+    #### THRESHOLD ####
+    # Threshold = 0.5 
+    traintargetPred[trainPred >= 0.5] <- 1
+    traintargetPred[trainPred < 0.5] <- 0
+    #traintargetPred
+    
+    lossN = getLoss(train_set$target[train_set$target == 0], trainPred[train_set$target == 0])
+    lossP = getLoss(train_set$target[train_set$target == 1], trainPred[train_set$target == 1])
+    mean_loss_train <- (lossN+lossP)/2
+    
+    cm <- confusionMatrix(data = as.factor(traintargetPred), 
+                          reference = as.factor(train_set$target), 
+                          positive='1')
+    
+    
+    cm_relative <- calculaMatrizConfusaoRelativa(cm)
+    acc_bal_train <- (cm_relative[1,1] + cm_relative[2,2])/2
+    
+    
+    # Validation
+    x_val <- model.matrix(hypothesis, val_set)
+    y_val <- val_set$target
+    valPred <- predict(model, newx = x_val, type="response")
+    
+    #converting to target
+    valtargetPred <- valPred
+    
+    #### THRESHOLD ####
+    # Threshold = 0.5 
+    valtargetPred[valPred >= 0.5] <- 1
+    valtargetPred[valPred < 0.5] <- 0
+    
+    ##### Let's see how well we did
+    #Loss 
+    lossN = getLoss(val_set$target[val_set$target == 0], valPred[val_set$target == 0])
+    lossP = getLoss(val_set$target[val_set$target == 1], valPred[val_set$target == 1])
+    mean_loss_val <- (lossN+lossP)/2
+    
+    
+    cm <- confusionMatrix(data = as.factor(valtargetPred), 
+                          reference = as.factor(val_set$target), 
+                          positive='1')
+    
+    cm_relative <- calculaMatrizConfusaoRelativa(cm)
+    acc_bal_val <- (cm_relative[1,1] + cm_relative[2,2])/2
+  
+    loss_train[i] <- mean_loss_train
+    loss_val[i] <- mean_loss_val
+    
+    acc_train[i] <- acc_bal_train 
+    acc_val[i] <-acc_bal_val 
     i <- i + 1
     
 }
 
+############################################
+# Pay attention on warnings! They might or #
+# not prejudice your model performance!    #
+############################################
+
+############# Plotting Loss ############
+plot(loss_train, xlab="Regularization factor (lambda)", ylab="Loss", 
+     pch="+", col="red",  xaxt="n", 
+     ylim=c(min(c(loss_train, loss_val,loss_baseline)),
+            max(c(loss_train, loss_val,loss_baseline))))
 
 
+axis(1, at=1:length(lambda_values), labels=lambda_values, 
+     cex.axis=0.5, las=2)
+
+points(loss_val, pch="*", col="blue")
+points(rep(loss_baseline, length(loss_val)), pch="o", col="green")
+
+lines(loss_train, col="red", lty=2)
+lines(loss_val, col="blue", lty=2)
+lines(rep(loss_baseline, length(loss_val)), col="green", lty=2)
+legend(5, 0.5, legend=c("Train", "Validation", "Baseline"),
+       col=c("red","blue","green"), lty=2, cex=0.7)
+
+############ Ploting Acc Balanced ############
+plot(acc_train, xlab="Regularization factor (lambda)", ylab="Acc Balanced", 
+     pch="+", col="red",  xaxt="n", 
+     ylim=c(min(c(acc_train, acc_val,acc_baseline)),
+            max(c(acc_train, acc_val,acc_baseline))))
+
+axis(1, at=1:length(lambda_values), labels=lambda_values, 
+     cex.axis=0.5, las=2)
+points(acc_val, pch="*", col="blue")
+points(rep(acc_baseline, length(acc_val)), pch="o", col="green")
+
+lines(acc_train, col="red", lty=2)
+lines(acc_val, col="blue", lty=2)
+lines(rep(acc_baseline, length(acc_val)), col="green", lty=2)
+legend(5, 0.7, legend=c("Train", "Validation", "Baseline"),
+       col=c("red","blue","green"), lty=2, cex=0.7)
+
+#### Testing #### 
+
+#### Getting best lambda based on Balanced Accuracy on Validation ####
+i<- which.max(acc_val)
+i
+
+best_lambda <- lambda_values[i]
+best_lambda
+
+x_train <- model.matrix(hypothesis, train_set)
+y_train <- train_set$target
+model <- glmnet(x_train, y_train,  family="binomial", standardize = FALSE, 
+                alpha=0, maxit = 1e+05, trace.it=1, lambda = best_lambda)
+
+trainPred <- predict(model, newx = x_train, type="response")
+
+x_test <- model.matrix(hypothesis, test_set)
+y_test <- test_set$target
+testPred <- predict(model, newx = x_test, type="response")
+
+#converting to target
+testtargetPred <- testPred
+
+#### THRESHOLD ####
+# Threshold = 0.5 
+testtargetPred[testPred >= 0.5] <- 1
+testtargetPred[testPred < 0.5] <- 0
+
+##### Let's see how good the model performs
+#Loss 
+lossN = getLoss(test_set$target[test_set$target == 0], testPred[test_set$target == 0])
+lossP = getLoss(test_set$target[test_set$target == 1], testPred[test_set$target == 1])
+mean_loss_test <- (lossN+lossP)/2
+mean_loss_test
 
 
-mae_train_comb <- total_mae_train_noCat[1:4];mae_train_comb
-mae_val_comb <- total_mae_val_noCat[1:4];mae_val_comb
+cm <- confusionMatrix(data = as.factor(testtargetPred), 
+                      reference = as.factor(test_set$target), 
+                      positive='1')
 
-mse_train_comb <- total_mse_train_noCat[1:4];mse_train_comb
-mse_val_comb <- total_mse_val_noCat[1:4];mse_val_comb
-
-r2_train_comb <- total_r2_train_noCat[1:4];r2_train_comb
-r2_val_comb <- total_r2_val_noCat[1:4];r2_val_comb
-
-#
-mae_train_poly <- total_mae_train_noCat[5:8];mae_train_poly
-mae_val_poly <- total_mae_val_noCat[5:8];mae_val_poly
-
-mse_train_poly <- total_mse_train_noCat[5:8];mse_train_poly
-mse_val_poly <- total_mse_val_noCat[5:8];mse_val_poly
-
-r2_train_poly <- total_r2_train_noCat[5:8];r2_train_poly
-r2_val_poly <- total_r2_val_noCat[5:8];r2_val_poly
-
-
-models_comb <- c('h02', 'h03', 'h04', 'h05');models_comb
-models_poly <- c('h06', 'h07', 'h08', 'h09');models_poly
-
-
-########
-# Plotando curvas de erro x complexidade MAE
-#jpeg("mae.jpeg", quality = 75)
-plot(mae_train_comb, xlab="Degree", ylab="Error", 
-     ylim=c(280, 400), pch="+", col="orange",  xaxt="n")
-points(mae_val_comb, pch="+", col="black")
-lines(mae_train_comb, col="orange", lty=1)
-lines(mae_val_comb, col="black", lty=1)
-
-
-points(mae_train_poly, pch="*", col="blue")
-points(mae_val_poly, pch="*", col="red")
-lines(mae_train_poly, col="blue", lty=2)
-lines(mae_val_poly, col="red", lty=2)
-
-points(rep(mae_val_baseline, 4), pch="o", col="green")
-lines(rep(mae_val_baseline, 4), col="green", lty=1)
-
-axis(1, at=1:4, labels=c(2, 3, 5, 10), las=1)
-
-legend(400, y=NULL,
-       legend=c("Feature Combination Train", "Feature Combination Valid","Polynomials Train", "Polynomials Test","Baseline"), 
-       col=c("orange","black","red","blue", "green"), lty=1, cex=0.8)
-#dev.off()
-
-####
-
-# Plotando curvas de erro x complexidade MSE
-#jpeg("mse.jpeg", quality = 75)
-plot(mse_train_comb, xlab="Degree", ylab="Error", 
-     ylim=c(200000, 400000),pch="+", col="orange",  xaxt="n")
-points(mse_val_comb, pch="+", col="black")
-lines(mse_train_comb, col="orange", lty=1)
-lines(mse_val_comb, col="black", lty=1)
-mse_val_comb
-
-points(mse_train_poly, pch="*", col="blue")
-points(mse_val_poly, pch="*", col="red")
-lines(mse_train_poly, col="blue", lty=2)
-lines(mse_val_poly, col="red", lty=2)
-
-points(rep(mse_val_baseline, 4), pch="o", col="green")
-lines(rep(mse_val_baseline, 4), col="green", lty=1)
-
-axis(1, at=1:4, labels=c(2, 3, 5, 10), las=1)
-
-legend(220000, y=NULL,
-       legend=c("Feature Combination Train", "Feature Combination Valid","Polynomials Train", "Polynomials Test","Baseline"), 
-       col=c("orange","black","red","blue", "green"), lty=1, cex=0.8)
-
-#dev.off()
-
-####
-
-# Plotando curvas de erro x complexidade R2
-#jpeg("r2.jpeg", quality = 75)
-plot(r2_train_comb, xlab="Degree", ylab="R2", 
-     ylim=c(.6, 1), pch="+", col="orange",  xaxt="n")
-points(r2_val_comb, pch="+", col="black")
-lines(r2_train_comb, col="orange", lty=1)
-lines(r2_val_comb, col="black", lty=1)
-
-
-points(r2_train_poly, pch="*", col="blue")
-points(r2_val_poly, pch="*", col="red")
-lines(r2_train_poly, col="blue", lty=2)
-lines(r2_val_poly, col="red", lty=2)
-
-points(rep(r2_val_baseline, 4), pch="o", col="green")
-lines(rep(r2_val_baseline, 4), col="green", lty=1)
-
-axis(1, at=1:4, labels=c(2, 3, 5, 10), las=1)
-
-legend(0.7, y=NULL,
-       legend=c("Feature Combination Train", "Feature Combination Valid","Polynomials Train", "Polynomials Test","Baseline"), 
-       col=c("orange","black","red","blue", "green"), lty=1, cex=0.8)
-#dev.off()
-
-
-######## A PARTIR DAQUI CALCULOS DE ERRO DO TEST SET ##########
-model <- lm(formula=h04, data=dataTest)
-
-testPred <- predict(model, test_set)
-mae_test <- MAE(testPred, test_set$target);mae_test
-
-mse_test <- MSE(testPred, test_set$target);mse_test
-
-r2_test <- R2(testPred, test_set$target);r2_test
-
-
-
-
-
-
-
-###############################################################################################################################
-
-
-mean_features <- apply(trainSet[,1:(ncol(trainSet)-1)], 2, mean)
-mean_features
-
-
-sd_features <- apply(trainSet[,1:(ncol(trainSet)-1)], 2, sd)
-sd_features
-
-trainSet[,1:(ncol(trainSet)-1)] <- sweep(trainSet[,1:(ncol(trainSet)-1)], 2, mean_features, "-")
-trainSet[,1:(ncol(trainSet)-1)] <- sweep(trainSet[,1:(ncol(trainSet)-1)], 2, sd_features, "/")
-summary(trainSet)
-
-
-
-valSet[,1:(ncol(valSet)-1)] <- sweep(valSet[,1:(ncol(valSet)-1)], 2, mean_features, "-")
-valSet[,1:(ncol(valSet)-1)] <- sweep(valSet[,1:(ncol(valSet)-1)], 2, sd_features, "/")
-summary(valSet)
-
-
-testSet[,1:(ncol(testSet)-1)] <- sweep(testSet[,1:(ncol(testSet)-1)], 2, mean_features, "-")
-testSet[,1:(ncol(testSet)-1)] <- sweep(testSet[,1:(ncol(testSet)-1)], 2, sd_features, "/")
-summary(testSet)
+cm_relative <- calculaMatrizConfusaoRelativa(cm)
+acc_bal_test <- (cm_relative[1,1] + cm_relative[2,2])/2
+acc_bal_test
