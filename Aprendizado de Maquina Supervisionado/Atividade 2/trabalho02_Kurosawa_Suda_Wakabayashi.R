@@ -554,15 +554,6 @@ acc_test_bal <- (cm_relative[1,1] + cm_relative[2,2])/2
 acc_test_bal
 
 
-
-
-
-
-
-
-
-
-
 ############ Combining Features ###########
 cor(train_set[1:(ncol(train_set)-1)])
 

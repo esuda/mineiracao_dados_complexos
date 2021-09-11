@@ -36,6 +36,8 @@ Antes de começar a implementação do seu trabalho configure o _workspace_ e im
 ```{r atv0-code}
 # Adicione os demais pacotes usados neste trabalho:
 
+library(umap)
+library(Rtsne)
 
 # Configure ambiente de trabalho na mesma pasta 
 # onde colocou a base de dados:
@@ -46,7 +48,7 @@ Antes de começar a implementação do seu trabalho configure o _workspace_ e im
 speech <- read.csv("speech.csv", header = TRUE)
 
 # Convertendo a coluna 618 em characteres 
-speech$LETRA <- LETTERS[speech$LETRA]
+speech$LETRA <- as.factor(speech$LETRA)
 
 ```
 
@@ -66,10 +68,10 @@ com um valor mais baixo antes de gerar a versão final do PDF. -->
 ```{r atv1-code}
 
 # Executando a redução de dimensionalidade com o prcomp
-
+speech_pca <- prcomp(speech[,-618], scale.=FALSE)
 # Analisando as componentes com o comando summary
-
-
+options(max.print=2000)
+summary(speech_cov)
 ```
 
 ## Análise
@@ -118,9 +120,10 @@ Em seguida, use o comando `summary`, analise o resultado e os itens a seguir:
 
 # Executando a redução de dimensionalidade com o prcomp
  # com normalização dos dados
-
+speech_pca <- prcomp(speech[,-618], scale.=TRUE)
 # Analisando as componentes com o comando summary
-
+options(max.print=2000)
+summary(speech_pca)
 
 ```
 
@@ -173,8 +176,16 @@ a) Aplique a redução de dimensionalidade com a técnica PCA e gere um gráfico
 ```{r atv3a-code}
 
 # Aplicando redução de dimensionalidade com a técnica PCA
+# Compara com a Analise de Componentes Principais:
+pca <- princomp(speech[,-618])$scores[,1:2]
 
+pca
 # Gerando o gráfico de dispersão
+speech_pca
+# Visualizacao de componentes principais:
+plot(speech_pca$x[,1:2], col=speech_pca[,5])
+plot(pca, t='n', main="", xlab="componente 1", ylab="componente 2")
+text(pca, labels=speech[,618], col=colors[speech[,618]])
 
 ```
 
@@ -183,10 +194,14 @@ b) Aplique a redução de dimensionalidade com a técnica UMAP e gere um gráfic
 ```{r atv3b-code}
 
 # Aplicando redução de dimensionalidade com a técnica UMAP
+# Executa UMAP:
+set.seed(42) # semente fixa para reprodutibilidade 
+speech.umap <- umap(as.matrix(speech[,-618]))
 
 # Gerando o gráfico de dispersão
-
-
+plot(speech.umap$layout , col=speech[,618] , xlab="dimensao 1", 
+     ylab="dimensao2", pch =16)
+     
 ```
 
 c) Aplique a redução de dimensionalidade com a técnica T-SNE e gere um gráfico de dispersão dos dados. Use a coluna `618` para classificar as amostras e definir uma coloração. 
@@ -194,8 +209,12 @@ c) Aplique a redução de dimensionalidade com a técnica T-SNE e gere um gráfi
 ```{r atv3c-code}
 
 # Aplicando redução de dimensionalidade com a técnica T-SNE
+speech_unique_values <- unique(speech)
+set.seed(42) # semente fixa para reprodutibilidade 
+tsne <- Rtsne(as.matrix(speech_unique_values[,-618]), perplexity = 30, dims=3)
 
 # Gerando o gráfico de dispersão
+plot(tsne$Y, col=speech_unique_values[,618], xlab="dimensao 1", ylab="dimensao 2", pch=16)
 
 
 ```
