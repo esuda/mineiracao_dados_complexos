@@ -98,7 +98,8 @@ getLoss <- function(y_true, y_pred){
 
 train_set <- read.csv("./proteins_training_set.csv", stringsAsFactors=TRUE)
 val_set <- read.csv("./proteins_validation_set.csv", stringsAsFactors=TRUE)
-# test_set <- read.csv("./test_set_air_quality.csv", stringsAsFactors=TRUE)
+test_set <- read.csv("./proteins_test_set.csv", stringsAsFactors=TRUE)
+SARS_set <- read.csv("./SARS_test_set.csv", stringsAsFactors=TRUE)
 
 # Desenvolvam o trabalho a partir daqui, apos executarem os comandos a cima
 
@@ -120,8 +121,8 @@ library(pROC)
 # Validacao se os conjuntos sao disjuntos
 ## Ok, todos os conjuntos sao disjuntos
 merge(train_set, val_set)
-#merge(train_set, test_set)
-#merge(test_set, val_set)
+merge(train_set, test_set)
+merge(test_set, val_set)
 
 # Validacao de volumetria das bases
 
@@ -131,6 +132,7 @@ merge(train_set, val_set)
 summary(train_set)
 dim(train_set)
 colnames(train_set)
+table(train_set$target)
 count(train_set[train_set$target == 0,])
 count(train_set[train_set$target == 1,])
 
@@ -141,17 +143,33 @@ count(train_set[train_set$target == 1,])
 summary(val_set)
 dim(val_set)
 colnames(val_set)
+table(val_set$target)
 count(val_set[val_set$target == 0,])
 count(val_set[val_set$target == 1,])
 
 #--------------------------------
 # Verificacao do dataset de teste
 #--------------------------------
-# summary(test_set)
-# dim(test_set)
-# colnames(test_set)
-# count(test_set[test_set$target == 0,])
-# count(test_set[test_set$target == 1,])
+summary(test_set)
+dim(test_set)
+colnames(test_set)
+table(test_set$target)
+count(test_set[test_set$target == 0,])
+count(test_set[test_set$target == 1,])
+
+
+#--------------------------------
+# Verificacao do dataset de SARS
+#--------------------------------
+summary(SARS_set)
+dim(SARS_set)
+colnames(SARS_set)
+table(SARS_set$target)
+#count(SARS_set[SARS_set$target == 0,])
+#count(SARS_set[SARS_set$target == 1,])
+
+
+
 
 #########
 # Visualizacao da distribuição das variaveis
@@ -178,17 +196,21 @@ summary(train_set)
 val_set[,1:(ncol(val_set)-1)] <- sweep(val_set[,1:(ncol(val_set)-1)], 2, min_features, "-")
 val_set[,1:(ncol(val_set)-1)] <- sweep(val_set[,1:(ncol(val_set)-1)], 2, diff, "/")
 summary(val_set)
-#test_set[,] <- sweep(test_set[,1:(ncol(test_set)-1)], 2, min_features, "-")
-#test_set[,] <- sweep(test_set[,1:(ncol(test_set)-1)], 2, diff, "/")
 
+test_set[,1:(ncol(test_set)-1)] <- sweep(test_set[,1:(ncol(test_set)-1)], 2, min_features, "-")
+test_set[,1:(ncol(test_set)-1)] <- sweep(test_set[,1:(ncol(test_set)-1)], 2, diff, "/")
+summary(test_set)
+
+SARS_set[,1:(ncol(SARS_set)-1)] <- sweep(SARS_set[,1:(ncol(SARS_set)-1)], 2, min_features, "-")
+SARS_set[,1:(ncol(SARS_set)-1)] <- sweep(SARS_set[,1:(ncol(SARS_set)-1)], 2, diff, "/")
+summary(SARS_set)
 #--------------------------------------------
 # Transformando target em variável categorica
 #--------------------------------------------
 train_set$target <- as.factor(train_set$target)
 val_set$target <- as.factor(val_set$target)
-#test_set$target <- as.factor(test_set$target)
-
-
+test_set$target <- as.factor(test_set$target)
+SARS_set$target <- as.factor(SARS_set$target)
 
 #------------------------------------------------------------------------------------------------
 # Visualizacao dos dados apos normalizacao min max (Visualmente nao alterou muito a distribuicao)
@@ -242,14 +264,14 @@ threshold <- 0.5
 traintargetPred[trainPred >= threshold] <- 1
 traintargetPred[trainPred < threshold] <- 0
 
-traintargetPred
+#traintargetPred
 
 #Valor de loss
-lossN = getLoss(train_set$target[train_set$target == 0], trainPred[train_set$target == 0])
-lossP = getLoss(train_set$target[train_set$target == 1], trainPred[train_set$target == 1])
-lossN
-lossP
-(lossN+lossP)/2
+#lossN = getLoss(train_set$target[train_set$target == 0], trainPred[train_set$target == 0])
+#lossP = getLoss(train_set$target[train_set$target == 1], trainPred[train_set$target == 1])
+#lossN
+#lossP
+#(lossN+lossP)/2
 
 
 #Matriz de confusão 
@@ -262,6 +284,10 @@ cm$table
 
 cm_relative <- calculaMatrizConfusaoRelativa(cm)
 cm_relative
+
+acc_baseline_train <- (cm_relative[1,1] + cm_relative[2,2])/2
+acc_baseline_train
+
 
 ### Predicao no conjunto de validacao ###
 x_val <- model.matrix(hypothesis, val_set)
@@ -283,8 +309,8 @@ cm_relative <- calculaMatrizConfusaoRelativa(cm)
 cm_relative
 
 
-acc_baseline <- (cm_relative[1,1] + cm_relative[2,2])/2
-acc_baseline
+acc_baseline_val <- (cm_relative[1,1] + cm_relative[2,2])/2
+acc_baseline_val
 
 
 
@@ -313,6 +339,43 @@ ROC <- roc(val_set$target, valPred[,1], direction="<")
 ROC
 
 plot(ROC, col="blue", lwd=2, main="ROC")
+
+
+
+##### BASELINE COM TESTES #######
+
+
+x_test <- model.matrix(hypothesis,test_set )
+y_test <- test_set$target
+testPred <- predict(model, newx = x_test, type="response")
+
+
+#converting to target
+testtargetPred <- testPred
+
+
+#### THRESHOLD ####
+# Threshold = 0.5 
+testtargetPred[testPred >= 0.5] <- 1
+testtargetPred[testPred < 0.5] <- 0
+
+#testtargetPred
+
+cm <- confusionMatrix(data = as.factor(testtargetPred), 
+                      reference = as.factor(test_set$target), 
+                      positive='1')
+
+#matriz transposta relativa
+cm_relative <- calculaMatrizConfusaoRelativa(cm)
+cm_relative
+
+
+acc_baseline_test <- (cm_relative[1,1] + cm_relative[2,2])/2
+acc_baseline_test
+
+
+
+
 
 #-----------------------------------------------
 # Balanceamento por ponderacao da funcao de erro
@@ -351,6 +414,7 @@ x_val <- model.matrix(hypothesis, val_set)
 y_val <- val_set$target
 valPred <- predict(logRegModel_weighting, newx = x_val, type="response")
 
+#observar e comparar com o valbaseline
 valtargetPred <- valPred
 
 #### THRESHOLD ####
@@ -406,7 +470,7 @@ feature_names <- colnames(train_set)[1:(ncol(train_set)-1)]
 
 ## Polynomial Analysis
 ### Be careful! Higher polynomial degrees might not converge!
-for(i in 1:5){  
+for(i in 1:10){  
     
     print(i)
     hypothesis <- getHypothesis(feature_names, i)
@@ -483,15 +547,15 @@ plot(loss_train, xlab="Complexity", ylab="Loss",
             max(c(loss_train, loss_val,loss_baseline))))
 
 
-axis(1, at=1:5, labels=seq(from = 1, to = 5, by = 1), las=1)
+axis(1, at=1:10, labels=seq(from = 1, to = 10, by = 1), las=1)
 points(loss_val, pch="*", col="blue")
 points(rep(loss_baseline, length(loss_val)), pch="o", col="green")
 
 lines(loss_train, col="red", lty=2)
 lines(loss_val, col="blue", lty=2)
 lines(rep(loss_baseline, length(loss_val)), col="green", lty=2)
-legend(2.3, 0.465, legend=c("Train", "Validation", "Baseline"),
-       col=c("red","blue","green"), lty=2, cex=0.7)
+legend(3.5, 0.950, legend=c("Train", "Validation", "Baseline"),
+       col=c("red","blue","green"), lty=2, cex=1.5)
 
 ############ Ploting Acc Balanced ############
 plot(acc_train, xlab="Complexity", ylab="Balanced Accuracy", 
@@ -499,15 +563,15 @@ plot(acc_train, xlab="Complexity", ylab="Balanced Accuracy",
      ylim=c(min(c(acc_train, acc_val,acc_baseline)),
             max(c(acc_train, acc_val,acc_baseline))))
 
-axis(1, at=1:5, labels=seq(from = 1, to = 5, by = 1), las=1)
+axis(1, at=1:10, labels=seq(from = 1, to = 10, by = 1), las=1)
 points(acc_val, pch="*", col="blue")
 points(rep(acc_baseline, length(acc_val)), pch="o", col="green")
 
 lines(acc_train, col="red", lty=2)
 lines(acc_val, col="blue", lty=2)
 lines(rep(acc_baseline, length(acc_val)), col="green", lty=2)
-legend(1.0, 0.81, legend=c("Train", "Validation", "Baseline"),
-       col=c("red","blue","green"), lty=2, cex=0.7)
+legend(7, 0.635, legend=c("Train", "Validation", "Baseline"),
+       col=c("red","blue","green"), lty=2, cex=1.5)
 
 
 #### Testing #### 
@@ -557,6 +621,9 @@ acc_test_bal
 ############ Combining Features ###########
 cor(train_set[1:(ncol(train_set)-1)])
 
+
+teste <- getHypothesis(feature_names, 2)
+
 f01 <- formula(target ~ .)
 
 f02 <- formula(target ~ . + (start_position+end_position+chou_fasman+emini+kolaskar_tongaonkar+parker+isoelectric_point+aromaticity+hydrophobicity+stability)^2)
@@ -568,6 +635,7 @@ f04 <- formula(target ~ . + (start_position+end_position+chou_fasman+emini+kolas
 f05 <- formula(target ~ . + (start_position+end_position+chou_fasman+emini+kolaskar_tongaonkar+parker+isoelectric_point+aromaticity+hydrophobicity+stability)^5)
 
 f06 <- formula(target ~ . + (start_position+end_position+chou_fasman+emini+kolaskar_tongaonkar+parker+isoelectric_point+aromaticity+hydrophobicity+stability)^6)
+
 
 
 formulas <- c(f01, f02, f03, f04, f05, f06)
@@ -664,8 +732,8 @@ points(rep(loss_baseline, length(loss_val)), pch="o", col="green")
 lines(loss_train, col="red", lty=2)
 lines(loss_val, col="blue", lty=2)
 lines(rep(loss_baseline, length(loss_val)), col="green", lty=2)
-legend(3.0, 0.48, legend=c("Train", "Validation", "Baseline"),
-       col=c("red","blue","green"), lty=2, cex=0.7)
+legend(4.0, 0.94, legend=c("Train", "Validation", "Baseline"),
+       col=c("red","blue","green"), lty=2, cex=1.5)
 
 ############ Ploting Acc Balanced ############
 plot(acc_train, xlab="Complexity", ylab="Balanced Accuracy", 
@@ -680,13 +748,13 @@ points(rep(acc_baseline, length(acc_val)), pch="o", col="green")
 lines(acc_train, col="red", lty=2)
 lines(acc_val, col="blue", lty=2)
 lines(rep(acc_baseline, length(acc_val)), col="green", lty=2)
-legend(1.0, 0.835, legend=c("Train", "Validation", "Baseline"),
-       col=c("red","blue","green"), lty=2, cex=0.7)
+legend(4.0, 0.64, legend=c("Train", "Validation", "Baseline"),
+       col=c("red","blue","green"), lty=2, cex=1.5)
 
 
 #### Testing #### 
 i<- which.max(acc_val)
-
+i
 f <- formulas[[i]]
 x_train <- model.matrix(f, train_set)
 y_train <- train_set$target
@@ -733,7 +801,7 @@ loss_val <- c()
 acc_train <- c()
 acc_val <- c()
 
-lambda_values <- c(1.0, 0.1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6)
+lambda_values <- c(1.0, 0.1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7 , 1e-8, 1e-9, 1e-10)
 
 i <- 1
 for(l in lambda_values){
@@ -828,8 +896,8 @@ points(rep(loss_baseline, length(loss_val)), pch="o", col="green")
 lines(loss_train, col="red", lty=2)
 lines(loss_val, col="blue", lty=2)
 lines(rep(loss_baseline, length(loss_val)), col="green", lty=2)
-legend(5, 0.5, legend=c("Train", "Validation", "Baseline"),
-       col=c("red","blue","green"), lty=2, cex=0.7)
+legend(4, 0.98, legend=c("Train", "Validation", "Baseline"),
+       col=c("red","blue","green"), lty=2, cex=1.5)
 
 ############ Ploting Acc Balanced ############
 plot(acc_train, xlab="Regularization factor (lambda)", ylab="Acc Balanced", 
@@ -845,8 +913,8 @@ points(rep(acc_baseline, length(acc_val)), pch="o", col="green")
 lines(acc_train, col="red", lty=2)
 lines(acc_val, col="blue", lty=2)
 lines(rep(acc_baseline, length(acc_val)), col="green", lty=2)
-legend(5, 0.7, legend=c("Train", "Validation", "Baseline"),
-       col=c("red","blue","green"), lty=2, cex=0.7)
+legend(1, 0.65, legend=c("Train", "Validation", "Baseline"),
+       col=c("red","blue","green"), lty=2, cex=1.5)
 
 #### Testing #### 
 
@@ -891,3 +959,5 @@ cm <- confusionMatrix(data = as.factor(testtargetPred),
 cm_relative <- calculaMatrizConfusaoRelativa(cm)
 acc_bal_test <- (cm_relative[1,1] + cm_relative[2,2])/2
 acc_bal_test
+
+
