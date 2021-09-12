@@ -10,29 +10,6 @@
 # 
 #----------------------------------------------------------------#
 
-
-# Funcao de Apoio ao Trabalho 01 de Aprendizado Supervisionado I. 
-# Esta fun??o escreve a formula dos modelos polinomiais. 
-# Parametros:
-
-# real_feature_names: Um vetor com os nomes dos atributos continuos que voce
-#                     quer que seja elevado ao grau desejado.
-#  
-# categorical_feature_names: Um vetor com os nomes dos atributos categoricos
-#                            que voce quer que seja adicionado a hipotese. 
-#                            Eles n?o s?o elevados ao grau especificado ja que
-#                            sao valores binarios (0 ou 1). Se voce quer uma
-#                            hipotese que nao tenha nenhum valor categorico, mas
-#                            apenas os reais, basta nao passar nenhum valor 
-#                            para este parametro quando chamar a funcao.
-#
-#
-# degree: Grau que voc? deseja que os atributos reais em "real_feature_names"
-#         sejam elevados. Ao chamar a funcao, escreva explicitamente
-#         o grau desejado. Por exemplo, para grau igual 2, escreva degree=2
-
-# Vejam os exerc?cios 02 e 03 para ver o funcionamento 
-# de uma funcao similar a essa.
 setwd("/Users/nkuros/Documents/mineiracao_dados_complexos/Aprendizado de Maquina Supervisionado/Atividade 2/")
 
 
@@ -94,6 +71,17 @@ getLoss <- function(y_true, y_pred){
     return(totalLoss)
 }
 
+
+TNR_TPR <- function(cm){
+    TNR <- cm$table[1,1]/(cm$table[1,1] + cm$table[2,1])
+    
+    TPR <- cm$table[2,2]/(cm$table[1,2] + cm$table[2,2])
+    
+    return(c(TNR,TPR ))
+}
+
+
+
 # Comandos que leem os conjuntos de treino e de validacao
 
 train_set <- read.csv("./proteins_training_set.csv", stringsAsFactors=TRUE)
@@ -106,6 +94,10 @@ SARS_set <- read.csv("./SARS_test_set.csv", stringsAsFactors=TRUE)
 # install.packages(ggplot2)
 # install.packages(dplyr)
 # install.packages(reshape2)
+# install.packages(glmnet)
+# install.packages(caret)
+# install.packages(pROC)
+
 
 library(ggplot2)
 library(dplyr)
@@ -165,8 +157,8 @@ summary(SARS_set)
 dim(SARS_set)
 colnames(SARS_set)
 table(SARS_set$target)
-#count(SARS_set[SARS_set$target == 0,])
-#count(SARS_set[SARS_set$target == 1,])
+count(SARS_set[SARS_set$target == 0,])
+count(SARS_set[SARS_set$target == 1,])
 
 
 
@@ -267,11 +259,11 @@ traintargetPred[trainPred < threshold] <- 0
 #traintargetPred
 
 #Valor de loss
-#lossN = getLoss(train_set$target[train_set$target == 0], trainPred[train_set$target == 0])
-#lossP = getLoss(train_set$target[train_set$target == 1], trainPred[train_set$target == 1])
-#lossN
-#lossP
-#(lossN+lossP)/2
+lossN = getLoss(train_set$target[train_set$target == 0], trainPred[train_set$target == 0])
+lossP = getLoss(train_set$target[train_set$target == 1], trainPred[train_set$target == 1])
+lossN
+lossP
+(lossN+lossP)/2
 
 
 #Matriz de confusão 
@@ -281,10 +273,14 @@ cm <- confusionMatrix(data = as.factor(traintargetPred),
                       positive='1')
 cm$table
 
+#TNR e TPR
+TNR_TPR(cm)
 
+#Matriz de confusão 
 cm_relative <- calculaMatrizConfusaoRelativa(cm)
 cm_relative
 
+#acuracia
 acc_baseline_train <- (cm_relative[1,1] + cm_relative[2,2])/2
 acc_baseline_train
 
@@ -294,7 +290,6 @@ x_val <- model.matrix(hypothesis, val_set)
 y_val <- val_set$target
 valPred <- predict(model, newx = x_val, type="response")
 
-#valPred
 
 #converting to target
 valtargetPred <- valPred
@@ -304,11 +299,12 @@ valtargetPred <- valPred
 # Threshold = 0.5 
 valtargetPred[valPred >= 0.5] <- 1
 valtargetPred[valPred < 0.5] <- 0
-#matriz transposta relativa
+
+# Matriz transposta relativa
 cm_relative <- calculaMatrizConfusaoRelativa(cm)
 cm_relative
 
-
+# Acuracia Balanceada de validacao
 acc_baseline_val <- (cm_relative[1,1] + cm_relative[2,2])/2
 acc_baseline_val
 
@@ -326,11 +322,14 @@ loss_baseline
 cm <- confusionMatrix(data = as.factor(valtargetPred), 
                       reference = as.factor(val_set$target), 
                       positive='1')
+# TNR e TPR
+TNR_TPR(cm)
 
-
+# CM relativa
 cm_relative <- calculaMatrizConfusaoRelativa(cm)
 cm_relative
 
+# Acuracia baseline
 acc_baseline <- (cm_relative[1,1] + cm_relative[2,2])/2
 acc_baseline
 
@@ -340,10 +339,7 @@ ROC
 
 plot(ROC, col="blue", lwd=2, main="ROC")
 
-
-
 ##### BASELINE COM TESTES #######
-
 
 x_test <- model.matrix(hypothesis,test_set )
 y_test <- test_set$target
@@ -352,7 +348,6 @@ testPred <- predict(model, newx = x_test, type="response")
 
 #converting to target
 testtargetPred <- testPred
-
 
 #### THRESHOLD ####
 # Threshold = 0.5 
@@ -365,16 +360,16 @@ cm <- confusionMatrix(data = as.factor(testtargetPred),
                       reference = as.factor(test_set$target), 
                       positive='1')
 
+#calcula TNR TPR
+TNR_TPR(cm)
+
 #matriz transposta relativa
 cm_relative <- calculaMatrizConfusaoRelativa(cm)
 cm_relative
 
-
+#
 acc_baseline_test <- (cm_relative[1,1] + cm_relative[2,2])/2
 acc_baseline_test
-
-
-
 
 
 #-----------------------------------------------
@@ -402,6 +397,7 @@ weights[train_set$target == 1] = w_positive
 # Associando o peso dos negatives (w_negative) aos respectivos exemplos
 weights[train_set$target == 0] = w_negative 
 
+# Modelo Baseline com os Pesos utilizados
 x_train <- model.matrix(hypothesis, train_set)
 y_train <- train_set$target
 
@@ -425,7 +421,7 @@ valtargetPred[valPred < 0.5] <- 0
 cm_relative <- calculaMatrizConfusaoRelativa(cm)
 cm_relative
 
-
+# Acurácia Baseline validação
 acc_baseline <- (cm_relative[1,1] + cm_relative[2,2])/2
 acc_baseline
 
@@ -574,7 +570,8 @@ legend(7, 0.635, legend=c("Train", "Validation", "Baseline"),
        col=c("red","blue","green"), lty=2, cex=1.5)
 
 
-#### Testing #### 
+
+#### Melhor Modelo Exponencial #### 
 i<- which.max(acc_val)
 i
 
@@ -587,11 +584,51 @@ model <- glmnet(x_train, y_train,  family="binomial", standardize = FALSE,
 
 trainPred <- predict(model, newx = x_train, type="response")
 
+#### Melhor modelo com dataset de Validacao ####
+
+x_val <- model.matrix(hypothesis, val_set)
+y_val <- val_set$target
+valPred <- predict(model, newx = x_val, type="response")
+
+#convertendo para target
+valtargetPred <- valPred
+
+#### THRESHOLD ####
+# Threshold = 0.5 
+valtargetPred[valPred >= 0.5] <- 1
+valtargetPred[valPred < 0.5] <- 0
+
+##### Verificando a performance do melhor
+#Loss 
+lossN = getLoss(val_set$target[val_set$target == 0], valPred[val_set$target == 0])
+lossP = getLoss(val_set$target[val_set$target == 1], valPred[val_set$target == 1])
+mean_loss_val <- (lossN+lossP)/2
+mean_loss_val 
+
+# Matriz de confusão para do dataset de validação com o melhor modelo exponencial
+cm <- confusionMatrix(data = as.factor(valtargetPred), 
+                      reference = as.factor(val_set$target), 
+                      positive='1')
+#TNR e TPR
+TNR_TPR(cm)
+
+# Matriz de confusão relativa - validação
+cm_relative <- calculaMatrizConfusaoRelativa(cm)
+cm_relative
+
+# Acurácia Balanceada - validação
+acc_val_bal <- (cm_relative[1,1] + cm_relative[2,2])/2
+acc_val_bal
+
+#### Melhor modelo com dataset de Teste #### 
+
+trainPred <- predict(model, newx = x_train, type="response")
+
 x_test <- model.matrix(hypothesis, test_set)
 y_test <- test_set$target
 testPred <- predict(model, newx = x_test, type="response")
 
-#converting to target
+#convertendo para target
 testtargetPred <- testPred
 
 #### THRESHOLD ####
@@ -599,21 +636,25 @@ testtargetPred <- testPred
 testtargetPred[testPred >= 0.5] <- 1
 testtargetPred[testPred < 0.5] <- 0
 
-##### Let's see how good the model performs
+##### Let's see how  the model performs
 #Loss 
 lossN = getLoss(test_set$target[test_set$target == 0], testPred[test_set$target == 0])
 lossP = getLoss(test_set$target[test_set$target == 1], testPred[test_set$target == 1])
 mean_loss_test <- (lossN+lossP)/2
 mean_loss_test 
 
-
+# Matriz de confusão - teste
 cm <- confusionMatrix(data = as.factor(testtargetPred), 
                       reference = as.factor(test_set$target), 
                       positive='1')
+#TNR e TPR
+TNR_TPR(cm)
 
+# Matriz de confusão Relativa - teste
 cm_relative <- calculaMatrizConfusaoRelativa(cm)
 cm_relative
 
+# Acurácia balanceada - teste
 acc_test_bal <- (cm_relative[1,1] + cm_relative[2,2])/2
 acc_test_bal
 
@@ -752,15 +793,54 @@ legend(4.0, 0.64, legend=c("Train", "Validation", "Baseline"),
        col=c("red","blue","green"), lty=2, cex=1.5)
 
 
-#### Testing #### 
+#### Melhor modelo Combinacao de Features #### 
 i<- which.max(acc_val)
 i
+
 f <- formulas[[i]]
 x_train <- model.matrix(f, train_set)
 y_train <- train_set$target
-model <- glmnet(x_train, y_train,  family="binomial", standardize = FALSE, 
+model <- glmnet(x_train, y_train,  family="binomial", standardize = FALSE, weights = weights,
                 alpha=0, maxit = 1e+05, trace.it=1, lambda = 1e-6)
 
+##Validando Modelo####
+x_val <- model.matrix(f, val_set)
+y_val <- val_set$target
+
+valPred <- predict(model, newx = x_val, type="response")
+
+#convertendo para target
+valtargetPred <- valPred
+
+#### THRESHOLD ####
+# Threshold = 0.5 
+valtargetPred[valPred >= 0.5] <- 1
+valtargetPred[valPred < 0.5] <- 0
+
+##### Verificando a performance do melhor modelo
+#Loss 
+lossN = getLoss(val_set$target[val_set$target == 0], valPred[val_set$target == 0])
+lossP = getLoss(val_set$target[val_set$target == 1], valPred[val_set$target == 1])
+mean_loss_val <- (lossN+lossP)/2
+mean_loss_val 
+#
+cm <- confusionMatrix(data = as.factor(valtargetPred), 
+                      reference = as.factor(val_set$target), 
+                      positive='1')
+#TNR e TPR
+TNR_TPR(cm)
+
+# Matriz de confusão Relativa - Validação
+cm_relative <- calculaMatrizConfusaoRelativa(cm)
+cm_relative
+
+# Acurácia balanceada - Validação
+acc_val_bal <- (cm_relative[1,1] + cm_relative[2,2])/2
+acc_val_bal
+
+#### Melhor modelo com dataset de Teste #### 
+
+trainPred <- predict(model, newx = x_train, type="response")
 
 x_test <- model.matrix(f, test_set)
 y_test <- test_set$target
@@ -781,13 +861,19 @@ lossP = getLoss(test_set$target[test_set$target == 1], testPred[test_set$target 
 mean_loss_test <- (lossN+lossP)/2
 mean_loss_test
 
-
+# Matriz de confusão para o dataset de teste com o melhor modelo
 cm <- confusionMatrix(data = as.factor(testtargetPred), 
                       reference = as.factor(test_set$target), 
                       positive='1')
 
+# TNR e TPR
+TNR_TPR(cm)
+
+# Matriz de confusão relativa - Teste
 cm_relative <- calculaMatrizConfusaoRelativa(cm)
 cm_relative
+
+#Acuracia Balanceada para o dataset de Teste
 acc_bal_test <- (cm_relative[1,1] + cm_relative[2,2])/2
 acc_bal_test
 
@@ -808,7 +894,7 @@ for(l in lambda_values){
     
     print(l)
     # Applying hypothesis and training the model
-    x_train <- model.matrix(hypothesis, train_set)
+    x_train <- model.matrix(f, train_set)
     y_train <- train_set$target
     model <- glmnet(x_train, y_train,  family="binomial", 
                     standardize = FALSE, maxit = 1e+05, 
@@ -830,17 +916,20 @@ for(l in lambda_values){
     lossP = getLoss(train_set$target[train_set$target == 1], trainPred[train_set$target == 1])
     mean_loss_train <- (lossN+lossP)/2
     
+    # Matriz de Confusão
     cm <- confusionMatrix(data = as.factor(traintargetPred), 
                           reference = as.factor(train_set$target), 
                           positive='1')
     
-    
+    # Matriz de confusão balanceada
     cm_relative <- calculaMatrizConfusaoRelativa(cm)
+    
+    # Acuracia balanceada
     acc_bal_train <- (cm_relative[1,1] + cm_relative[2,2])/2
     
     
     # Validation
-    x_val <- model.matrix(hypothesis, val_set)
+    x_val <- model.matrix(f, val_set)
     y_val <- val_set$target
     valPred <- predict(model, newx = x_val, type="response")
     
@@ -858,17 +947,21 @@ for(l in lambda_values){
     lossP = getLoss(val_set$target[val_set$target == 1], valPred[val_set$target == 1])
     mean_loss_val <- (lossN+lossP)/2
     
-    
+    # Matriz de confusão
     cm <- confusionMatrix(data = as.factor(valtargetPred), 
                           reference = as.factor(val_set$target), 
                           positive='1')
-    
+    # Matriz de confusão relativa
     cm_relative <- calculaMatrizConfusaoRelativa(cm)
+    
+    # Acuracia Balanceada
     acc_bal_val <- (cm_relative[1,1] + cm_relative[2,2])/2
   
+    # Loss para treino e validação
     loss_train[i] <- mean_loss_train
     loss_val[i] <- mean_loss_val
     
+    # Acuracia para treino e teste
     acc_train[i] <- acc_bal_train 
     acc_val[i] <-acc_bal_val 
     i <- i + 1
@@ -896,7 +989,7 @@ points(rep(loss_baseline, length(loss_val)), pch="o", col="green")
 lines(loss_train, col="red", lty=2)
 lines(loss_val, col="blue", lty=2)
 lines(rep(loss_baseline, length(loss_val)), col="green", lty=2)
-legend(4, 0.98, legend=c("Train", "Validation", "Baseline"),
+legend(2, 0.9, legend=c("Train", "Validation", "Baseline"),
        col=c("red","blue","green"), lty=2, cex=1.5)
 
 ############ Ploting Acc Balanced ############
@@ -916,11 +1009,10 @@ lines(rep(acc_baseline, length(acc_val)), col="green", lty=2)
 legend(1, 0.65, legend=c("Train", "Validation", "Baseline"),
        col=c("red","blue","green"), lty=2, cex=1.5)
 
-#### Testing #### 
 
-#### Getting best lambda based on Balanced Accuracy on Validation ####
-i<- which.max(acc_val)
-i
+#### Encontrando melhor lambda baseado na acurácia balanceada e loss na validação ####
+
+i<- 7
 
 best_lambda <- lambda_values[i]
 best_lambda
@@ -944,20 +1036,65 @@ testtargetPred <- testPred
 testtargetPred[testPred >= 0.5] <- 1
 testtargetPred[testPred < 0.5] <- 0
 
-##### Let's see how good the model performs
+##### Let's see how well the model performs
 #Loss 
 lossN = getLoss(test_set$target[test_set$target == 0], testPred[test_set$target == 0])
 lossP = getLoss(test_set$target[test_set$target == 1], testPred[test_set$target == 1])
 mean_loss_test <- (lossN+lossP)/2
 mean_loss_test
 
-
+# Matriz de confusão - Teste
 cm <- confusionMatrix(data = as.factor(testtargetPred), 
                       reference = as.factor(test_set$target), 
                       positive='1')
+#TNR e TPR
+TNR_TPR(cm)
 
+# Matriz de Confusão Relativa - Teste
 cm_relative <- calculaMatrizConfusaoRelativa(cm)
 acc_bal_test <- (cm_relative[1,1] + cm_relative[2,2])/2
 acc_bal_test
 
 
+#### Melhor modelo Combinacao de Features#### 
+i <- 5
+f <- formulas[[i]]
+
+x_train <- model.matrix(f, train_set)
+y_train <- train_set$target
+model <- glmnet(x_train, y_train,  family="binomial", standardize = FALSE, weights = weights,
+                alpha=0, maxit = 1e+05, trace.it=1, lambda = 1e-6)
+
+#### Melhor modelo com test set SARS #### 
+x_test <- model.matrix(f, SARS_set)
+y_test <- SARS_set$target
+testPred <- predict(model, newx = x_test, type="response")
+
+#converting to target
+testtargetPred <- testPred
+
+#### THRESHOLD ####
+# Threshold = 0.5 
+testtargetPred[testPred >= 0.5] <- 1
+testtargetPred[testPred < 0.5] <- 0
+
+##### Let's see how well the model performs
+#Loss 
+lossN = getLoss(SARS_set$target[SARS_set$target == 0], testPred[SARS_set$target == 0])
+lossP = getLoss(SARS_set$target[SARS_set$target == 1], testPred[SARS_set$target == 1])
+mean_loss_test <- (lossN+lossP)/2
+mean_loss_test
+
+# Matriz de confusão - SARS
+cm <- confusionMatrix(data = as.factor(testtargetPred), 
+                      reference = as.factor(SARS_set$target), 
+                      positive='1')
+                      
+# TNR e TPR
+TNR_TPR(cm)
+# Matriz de confusão relativa  - SARS
+cm_relative <- calculaMatrizConfusaoRelativa(cm)
+cm_relative
+# Acurácia balanceada - SARS
+acc_bal_test <- (cm_relative[1,1] + cm_relative[2,2])/2
+acc_bal_test
