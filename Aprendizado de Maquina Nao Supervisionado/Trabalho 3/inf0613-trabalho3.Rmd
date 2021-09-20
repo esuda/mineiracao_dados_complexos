@@ -22,6 +22,17 @@ Antes de começar a implementação do seu trabalho configure o _workspace_ e im
 
 ```{r atv0-code}
 # Adicione os pacotes usados neste trabalho:
+#install packages
+#install.packages("apcluster")
+#install.packages("fclust")
+#install.packages("ppclust")
+#install.packages("dbscan")
+#install.packages("gridExtra")
+#install.packages("fpc")
+#install.packages("NbClust")
+#install.packages("factoextra")
+#install.packages("NbClust")
+
 library(dplyr)
 library(ggplot2)
 library(factoextra)
@@ -32,12 +43,34 @@ library(dbscan)
 library(ppclust)
 library(fclust)
 library(apcluster)
+library ( NbClust )
+
+
+#Funções extras 
+onehot_features <- function(dataset, feature){
+    cats <- unique(dataset[, feature])
+    for (cat in cats){
+        dataset[cat] <- as.numeric(dataset[,feature]==cat)
+    }
+    return(dataset)
+}
+
+min_max <- function(df, columns){
+  min_features <- apply(df[,colnames(df) %in% columns], 2, min); min_features
+  max_features <- apply(df[,colnames(df) %in% columns], 2, max); max_features
+  diff <- max_features - min_features; diff
+  df[,colnames(df) %in% columns] <- sweep(df[,colnames(df) %in% columns], 2, min_features, "-")
+  df[,colnames(df) %in% columns] <- sweep(df[,colnames(df) %in% columns], 2, diff, "/")
+  return(df)
+
+}
 
 
 # Configure ambiente de trabalho na mesma pasta 
 # onde colocou a base de dados:
 # setwd("")
-setwd("C:\\Users\\Eric\\Documents\\GitHub\\mineiracao_dados_complexos\\Aprendizado de Maquina Nao Supervisionado\\Trabalho 3")
+# setwd("C:\\Users\\Eric\\Documents\\GitHub\\mineiracao_dados_complexos\\Aprendizado de Maquina Nao Supervisionado\\Trabalho 3")
+setwd("/Users/nkuros/Documents/mineiracao_dados_complexos/Aprendizado de Maquina Nao Supervisionado/Trabalho 3/")
 
 ```
 
@@ -54,29 +87,46 @@ a) *Tratamento de dados Incompletos:* Amostras incompletas deverão ser tratadas
 ```{r atv1a-code}
 # Leitura da base
 df <- read.table('imports-85.data',sep=',')
+set.seed (12345)
 # Tratamento de dados faltantes
 
 # Avaliacao do dataset
 summary(df)
 head(df)
 
+# Avalaiacao dos valores unicos de cada coluna
+for(col in colnames(df)){
+  print(col)
+  print(unique(df[,col]))
+  print('\n')
+}
+
 #------------------------------------------------------------------------
 # Tratando "?" que apresenta nas bases para poder transformar em numerico
 df$V2 <- as.numeric(gsub(pattern='[?]', replacement=NA, df$V2))
+df$V6 <- gsub(pattern='[?]', replacement=NA, df$V6)
 df$V19 <- as.numeric(gsub(pattern='[?]', replacement=NA, df$V19))
 df$V20 <- as.numeric(gsub(pattern='[?]', replacement=NA, df$V20))
 df$V22 <- as.numeric(gsub(pattern='[?]', replacement=NA, df$V22))
 df$V23 <- as.numeric(gsub(pattern='[?]', replacement=NA, df$V23))
 df$V26 <- as.numeric(gsub(pattern='[?]', replacement=NA, df$V26))
 
-#---------------------------------------------
+unique(df$V6)
+unique(df$V18)
+
+#----------------------------------------
+# Data set de teste retirando todos os NA
+df2 <- na.omit(df)
+summary(df2)
+#----------------------------------------
+
 # NA de V19 e V20 sao para a mesma marca mazda
 df[is.na(df$V19),]
 df[df$V3=='mazda',]
 # Agrupando os valores para obter a m[edia de V19 e V20]
 linhas = df$V3=='mazda' & !is.na(df$V19)
 colunas = c('V3', 'V19', 'V20')
-media_mazda = df[linhas,colunas] %>% group_by(V3) %>% summarise(media_v19=mean(V19), media_V20=mean(V20))
+media_mazda = df[linhas,colunas] %>% group_by(V3) %>% summarise(media_v19=median(V19), media_V20=median(V20))
 # Substituindo V19 e V20 que estao NA pela media
 df[df$V3=='mazda' & is.na(df$V19),'V19'] = media_mazda$media_v19
 df[df$V3=='mazda' & is.na(df$V20),'V20'] = media_mazda$media_V20
@@ -102,17 +152,21 @@ df[df$V3=='renault' & is.na(df$V22),'V22'] = media_renault$mediana_v22
 df[df$V3=='renault' & is.na(df$V23),'V23'] = media_renault$mediana_V23
 
 #----------------------------------------
-# Verificacao dos veiculos com preco zero
+# Verificacao dos veiculos com preco NA
 df[is.na(df$V26),]
 # Marcas para verificar 'audi', 'isuzu', 'porsche'
 df[df$V3 %in% c('audi', 'isuzu', 'porsche'),]
 
+#df[df$V3 %in% c('audi', 'isuzu', 'porsche') & !is.na(df$V26), c('V3', 'V26')] 
+#    %>% group_by(V3) 
+#    %>% summarise(max=max(V26), min=min(V26), mean=mean(V26), median=median(V26))
+
 linhas <- df$V3 %in% c('audi', 'isuzu', 'porsche') & !is.na(df$V26)
 colunas <- c('V3', 'V26')
-media_marcas <- df[linhas, colunas] %>% group_by(V3) %>% summarise(media_26=mean(V26))
+median_marcas <- df[linhas, colunas] %>% group_by(V3) %>% summarise(median_26=median(V26))
 
-for (marca in unique(media_marcas$V3)){
-  df[df$V3==marca & is.na(df$V26),'V26'] <- media_marcas[media_marcas$V3==marca,'media_26']
+for (marca in unique(median_marcas$V3)){
+  df[df$V3==marca & is.na(df$V26),'V26'] <- median_marcas[median_marcas$V3==marca,'median_26']
 }
 
 #----------------------
@@ -123,11 +177,11 @@ teste
 # Para as marcas que possuem mais carros com V2 nao nulo, tiramos a media
 linhas <- df$V3 %in% unique(df[is.na(df$V2),'V3']) & !is.na(df$V2)
 colunas <- c('V3', 'V2')
-media_marcas <- df[linhas, colunas] %>% group_by(V3) %>% summarise(media_2=mean(V2))
+media_marcas <- df[linhas, colunas] %>% group_by(V3) %>% summarise(median_2=median(V2))
 media_marcas
 
 for (marca in unique(media_marcas$V3) ){
-  df[df$V3==marca & is.na(df$V2),'V2'] <- media_marcas[media_marcas$V3==marca,'media_2']
+  df[df$V3==marca & is.na(df$V2),'V2'] <- media_marcas[media_marcas$V3==marca,'median_2']
 }
 
 # Para as marcas em que todos os carros apresentam V2 nulo, tiramos a mediana da base
@@ -143,7 +197,22 @@ mediana_marcas
 for (marca in unique(df[is.na(df$V2), 'V3'])) {
   df[df$V3==marca & is.na(df$V2),'V2'] <- mediana_marcas
 }
+# retirando duas linhas
+# df <- na.omit(df, cols='V6')
 
+# Criando features Categoricas via One Hot Encoding
+df = onehot_features(df, 'V3')
+df = onehot_features(df, 'V4')
+df = onehot_features(df, 'V5')
+#df = onehot_features(df, 'V6')
+df = onehot_features(df, 'V7')
+df = onehot_features(df, 'V8')
+df = onehot_features(df, 'V9')
+df = onehot_features(df, 'V15')
+df = onehot_features(df, 'V16')
+df = onehot_features(df, 'V18')
+
+# NORMALIZAR AS VARIAVEIS
 summary(df)
 
 ```
@@ -180,6 +249,49 @@ a) *Gráfico \textsl{Elbow Curve}:* Construa um gráfico com a soma das distânc
 
 ```{r atv2a-code}
 # Construindo um gráfico com as distâncias intra-cluster
+#colunas_porta = c("V2", "V10", "V11", "V12", "V13", "V14", "V17", "V19", "V20", "V21", "V22", "V23", "V24", "V25", "V26", "four")
+#colunas_tracao = c("V2", "V10", "V11", "V12", "V13", "V14", "V17", "V19", "V20", "V21", "V22", "V23", "V24", "V25", "V26", "rwd", "fwd")
+#colunas_cilindro = c("V2", "V10", "V11", "V12", "V13", "V14", "V17", "V19", "V20", "V21", "V22", "V23", "V24", "V25", "V26", "four", "six", "five", "three", "twelve", "two")
+colunas_full = c("V2", "V10", "V11", "V12", "V13", "V14", "V17", "V19", "V20", "V21", "V22", "V23", "V24", "V25", "V26", "convertible", "hatchback", "sedan", "wagon", "four", "six", "five", "three", "twelve", "two")
+
+#colunas = c("V2", "V10", "V11", "V12", "V13", "V14", "V17", "V19", "V20", "V21", "V22", "V23", "V24", "V25", "V26", "convertible", "hatchback", "sedan", "wagon")
+colunas = c("V2", "V10", "V11", "V12", "V13", "V14", "V17", "V19", "V20", "V21", "V22", "V23", "V24", "V25", "V26")
+numericas = c("V2", "V10", "V11", "V12", "V13", "V14", "V17", "V19", "V20", "V21", "V22", "V23", "V24", "V25", "V26")
+
+df_normalized <- min_max(df,numericas)
+summary(df_normalized)
+colnames(df_normalized)
+##### ALGORITIMO PARA TAMANHO DE CLUSTERS ####
+base_1 = df_normalized[, colunas_full]
+
+
+nb <- NbClust ( base_1 , distance ="euclidean",min.nc =2 , max.nc =30 , method ="complete",index ="all")
+
+for(col in colnames(base_1)){
+  print(col)
+  print(unique(df[,col]))
+  print('----------------------------')
+}
+
+fviz_nbclust(base_1, kmeans, method="wss",k.max=3)
+#--------------------------
+
+# Aplica a tecnica K-Means
+base_kmeans <- eclust(base_1, "kmeans", k=30,nstart=25, graph=TRUE)
+
+#TESTE KMEANS COM 3 para análise de grupos
+base_kmeans_test <- kmeans(base_1 , 3, nstart = 20)
+test_df <- as.data.frame.matrix(table(base_kmeans_test$cluster, df_normalized$V1));test_df
+
+### <<<<<<<<----- TESTE DE CORRELAÇÃO * APLICAR FX , tirar/ colocar  vars *
+
+# Mostra o numero do grupo de cada amostra
+base_kmeans$cluster
+
+
+# Visualiza os grupos
+
+
 
 
 ```
@@ -188,7 +300,7 @@ b) *Gráfico da Silhueta:* Construa um gráfico com o valor da silhueta para $K$
 
 ```{r atv2b-code}
 # Construindo um gráfico com os valores da silhueta
-
+fviz_nbclust(base_1, kmeans, method="silhouette", k.max=30)
 
 ```
 
@@ -196,9 +308,11 @@ c) *Escolha do $K$:* Avalie os gráficos gerados nos itens anteriores e escolha 
 
 ```{r atv2c-code}
 # Aplicando o k-means com o k escolhido 
+base_kmeans <- eclust(base_1, "kmeans", k=7,nstart=25, graph=FALSE)
 
 # Construindo um gráfico de dispersão
-
+fviz_cluster(base_kmeans, geom="point", ellipse.type="norm")
+base_kmeans$cluster
 ```
 
 ## Análises
@@ -219,11 +333,14 @@ a) *Ajuste de Parâmetros:* Experimente com valores diferentes para os parâmetr
 
 ```{r atv3a-code}
 # Experimento com valores de eps e minPts
-
+ db <- dbscan :: dbscan ( base_1 , eps=1 , minPts=5)
+ print(db)
 # Experimento com valores de eps e minPts
-
+ db <- dbscan :: dbscan ( base_1 , eps =0.25, minPts =5)
+ print(db)
 # Experimento com valores de eps e minPts
-
+ db <- dbscan :: dbscan ( base_1 , eps =0.10 , minPts =5)
+ print(db)
 
 ```
 
@@ -231,15 +348,26 @@ b) *Determinando Ruídos:* Escolha o valor de *minPts* que obteve o melhor resul
 
 ```{r atv3b-code}
 # Encontrando o melhor eps com o kNNdistplot
-
+dbscan :: kNNdistplot (base_1 , k =5)
 ```
 
 c) *Visualizando os Grupos:* Após a escolha dos parâmetros *eps* e *minPts*, utilize o rótulo obtido para cada amostra, indicando o grupo ao qual ela pertence, para gerar um gráfico de dispersão (atribuindo cores diferentes para cada grupo).
 
 ```{r atv3c-code}
 # Aplicando o DBscan com os parâmetros escolhidos
+ db <- dbscan :: dbscan ( base_1 , eps =0.60 , minPts =5)
+ print(db)
 
 # Construindo um gráfico de dispersão
+fviz_cluster(db, data=base_1, stand=FALSE, 
+             ellipse=FALSE, show.clust.cent=FALSE, 
+             geom="point", palette="jco",
+             ggtheme=theme_classic())
+
+#analise matriz cruzada
+
+#base_kmeans_test <- kmeans(base_1 , 3, nstart = 20)
+analise <- as.data.frame.matrix(table(db$cluster, df_normalized$V1));analise
 
 ```
 
