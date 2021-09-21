@@ -70,7 +70,7 @@ min_max <- function(df, columns){
 # onde colocou a base de dados:
 # setwd("")
 # setwd("C:\\Users\\Eric\\Documents\\GitHub\\mineiracao_dados_complexos\\Aprendizado de Maquina Nao Supervisionado\\Trabalho 3")
-setwd("/Users/nkuros/Documents/mineiracao_dados_complexos/Aprendizado de Maquina Nao Supervisionado/Trabalho 3/")
+# setwd("/Users/nkuros/Documents/mineiracao_dados_complexos/Aprendizado de Maquina Nao Supervisionado/Trabalho 3/")
 
 ```
 
@@ -200,21 +200,36 @@ for (marca in unique(df[is.na(df$V2), 'V3'])) {
 # retirando duas linhas
 # df <- na.omit(df, cols='V6')
 
-# Criando features Categoricas via One Hot Encoding
-df = onehot_features(df, 'V3')
-df = onehot_features(df, 'V4')
-df = onehot_features(df, 'V5')
-#df = onehot_features(df, 'V6')
-df = onehot_features(df, 'V7')
-df = onehot_features(df, 'V8')
-df = onehot_features(df, 'V9')
-df = onehot_features(df, 'V15')
-df = onehot_features(df, 'V16')
-df = onehot_features(df, 'V18')
+# Validacao do conteudo de cada coluna para ver se tratamos todos os casos de [?]
+for(col in colnames(df)){
+  print(col)
+  print(unique(df[,col]))
+  print('----------------------------')
+}
 
-# NORMALIZAR AS VARIAVEIS
-summary(df)
+# Construindo um gráfico com as distâncias intra-cluster
+# colunas_porta = c("V2", "V10", "V11", "V12", "V13", "V14", "V17", "V19", "V20", "V21", "V22", "V23", "V24", "V25", "V26", "four")
+# colunas_tracao = c("V2", "V10", "V11", "V12", "V13", "V14", "V17", "V19", "V20", "V21", "V22", "V23", "V24", "V25", "V26", "rwd", "fwd")
+# colunas_cilindro = c("V2", "V10", "V11", "V12", "V13", "V14", "V17", "V19", "V20", "V21", "V22", "V23", "V24", "V25", "V26", "four", "six", "five", "three", "twelve", "two")
+colunas_full = c("V2", "V10", "V11", "V12", "V13", "V14", "V17", "V19", "V20", "V21", "V22", "V23", "V24", "V25", "V26", "convertible", "hatchback", "sedan", "wagon", "four", "six", "five", "three", "twelve", "two")
 
+#colunas = c("V2", "V10", "V11", "V12", "V13", "V14", "V17", "V19", "V20", "V21", "V22", "V23", "V24", "V25", "V26", "convertible", "hatchback", "sedan", "wagon")
+colunas = c("V2", "V10", "V11", "V12", "V13", "V14", "V17", "V19", "V20", "V21", "V22", "V23", "V24", "V25", "V26")
+numericas = c("V2", "V10", "V11", "V12", "V13", "V14", "V17", "V19", "V20", "V21", "V22", "V23", "V24", "V25", "V26")
+
+numericas_reduzido = c("V2", "V10", "V11", "V12", "V13", "V14", "V19", "V23", "V24", "V25", "V26")
+
+melt_train_set <- df[, numericas]
+melt_train_set <- melt(melt_train_set)
+
+p <- ggplot(data=melt_train_set, aes(x=value))+
+    stat_density()+
+    facet_wrap(~variable, scales='free'); p
+
+# Normalizacao minmax das variaveis numericas
+df_normalized <- min_max(df,numericas)
+summary(df_normalized)
+colnames(df_normalized)
 ```
 
 b) *Seleção de Atributos:* Atributos não-numéricos não podem ser usados com as técnicas  agrupamento vistas em aula. Portanto, você deve selecionar um conjunto de atributos numéricos que serão usados para o agrupamento. Além disso você deve analisar se os atributos não-numéricos são descritivos para a realização dos agrupamentos. Caso um dos atributos não numéricos seja necessário, use a técnica do  *one hot encoding* para transformá-lo em numérico. **Não** aplique essa técnica nos atributos `symboling` e `make` para os agrupamentos subsequentes, eles não devem fazer parte do agrupamento. 
@@ -222,9 +237,21 @@ b) *Seleção de Atributos:* Atributos não-numéricos não podem ser usados com
 ```{r atv1b-code}
 # Seleção de atributos
 
-# Iremos descartar todas as variaveis categoricas que possuem apenas duas categorias, pois nao faz sentido na hora de realizar os algoritmos de clusterizacao por distancia.
-# Alem de descartar as variaveis categoricas body-style, drive-wheels, engine-type, fuel-system
+# Iremos criar o onehot encoding para todas as features categoricas, assim podemos testar a sua eficiencia ao rodar os algoritmos de clusterizacao
 
+# Criando features Categoricas via One Hot Encoding
+# df_normalized = onehot_features(df_normalized, 'V3')
+df_normalized = onehot_features(df_normalized, 'V4')
+df_normalized = onehot_features(df_normalized, 'V5')
+# df_normalized = onehot_features(df_normalized, 'V6')
+df_normalized = onehot_features(df_normalized, 'V7')
+df_normalized = onehot_features(df_normalized, 'V8')
+df_normalized = onehot_features(df_normalized, 'V9')
+df_normalized = onehot_features(df_normalized, 'V15')
+df_normalized = onehot_features(df_normalized, 'V16')
+df_normalized = onehot_features(df_normalized, 'V18')
+
+summary(df_normalized)
 
 ```
 
@@ -248,39 +275,22 @@ Nesta atividade, você deverá agrupar os dados com o algoritmo $K$*-means* e ut
 a) *Gráfico \textsl{Elbow Curve}:* Construa um gráfico com a soma das distâncias intra-cluster para $K$ variando de $2$ a $30$.
 
 ```{r atv2a-code}
-# Construindo um gráfico com as distâncias intra-cluster
-#colunas_porta = c("V2", "V10", "V11", "V12", "V13", "V14", "V17", "V19", "V20", "V21", "V22", "V23", "V24", "V25", "V26", "four")
-#colunas_tracao = c("V2", "V10", "V11", "V12", "V13", "V14", "V17", "V19", "V20", "V21", "V22", "V23", "V24", "V25", "V26", "rwd", "fwd")
-#colunas_cilindro = c("V2", "V10", "V11", "V12", "V13", "V14", "V17", "V19", "V20", "V21", "V22", "V23", "V24", "V25", "V26", "four", "six", "five", "three", "twelve", "two")
-colunas_full = c("V2", "V10", "V11", "V12", "V13", "V14", "V17", "V19", "V20", "V21", "V22", "V23", "V24", "V25", "V26", "convertible", "hatchback", "sedan", "wagon", "four", "six", "five", "three", "twelve", "two")
+base_1 = df_normalized[, numericas_reduzido]
 
-#colunas = c("V2", "V10", "V11", "V12", "V13", "V14", "V17", "V19", "V20", "V21", "V22", "V23", "V24", "V25", "V26", "convertible", "hatchback", "sedan", "wagon")
-colunas = c("V2", "V10", "V11", "V12", "V13", "V14", "V17", "V19", "V20", "V21", "V22", "V23", "V24", "V25", "V26")
-numericas = c("V2", "V10", "V11", "V12", "V13", "V14", "V17", "V19", "V20", "V21", "V22", "V23", "V24", "V25", "V26")
-
-df_normalized <- min_max(df,numericas)
-summary(df_normalized)
-colnames(df_normalized)
-##### ALGORITIMO PARA TAMANHO DE CLUSTERS ####
-base_1 = df_normalized[, colunas_full]
+fviz_nbclust(base_1, kmeans, method="wss",k.max=30)
 
 
-nb <- NbClust ( base_1 , distance ="euclidean",min.nc =2 , max.nc =30 , method ="complete",index ="all")
 
-for(col in colnames(base_1)){
-  print(col)
-  print(unique(df[,col]))
-  print('----------------------------')
-}
 
-fviz_nbclust(base_1, kmeans, method="wss",k.max=3)
-#--------------------------
+
+
+
 
 # Aplica a tecnica K-Means
-base_kmeans <- eclust(base_1, "kmeans", k=30,nstart=25, graph=TRUE)
+base_kmeans <- eclust(base_1, "kmeans", k=2,nstart=25, graph=TRUE)
 
 #TESTE KMEANS COM 3 para análise de grupos
-base_kmeans_test <- kmeans(base_1 , 3, nstart = 20)
+base_kmeans_test <- kmeans(base_1 , 4, nstart = 25)
 test_df <- as.data.frame.matrix(table(base_kmeans_test$cluster, df_normalized$V1));test_df
 
 ### <<<<<<<<----- TESTE DE CORRELAÇÃO * APLICAR FX , tirar/ colocar  vars *
@@ -307,6 +317,10 @@ fviz_nbclust(base_1, kmeans, method="silhouette", k.max=30)
 c) *Escolha do $K$:* Avalie os gráficos gerados nos itens anteriores e escolha o melhor valor  de $K$ com base nas informações desses gráficos e na sua análise. Se desejar, use também a função `NbClust` para ajudar nas análises. Com o valor de $K$ definido, utilize o rótulo obtido para cada amostra, indicando o grupo ao qual ela pertence, para gerar um gráfico de dispersão (atribuindo cores diferentes para cada grupo).
 
 ```{r atv2c-code}
+# Algoritmo de avaliacao do melhor K a ser escolhido
+
+nb <- NbClust ( base_1 , distance ="euclidean",min.nc =2 , max.nc =30 , method ="complete",index ="all")
+
 # Aplicando o k-means com o k escolhido 
 base_kmeans <- eclust(base_1, "kmeans", k=7,nstart=25, graph=FALSE)
 
