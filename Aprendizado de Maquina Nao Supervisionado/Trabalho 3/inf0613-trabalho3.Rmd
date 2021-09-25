@@ -3,9 +3,9 @@ title: INF0613 -- Aprendizado de Máquina Não Supervisionado
 output: pdf_document
 subtitle: Trabalho 3 - Técnicas de Agrupamento
 author: 
-  - Nome completo Integrante 1
-  - Nome completo Integrante 2
-  - Nome completo Integrante 3
+  - Daniel Noriaki Kurosawa
+  - Eric Uyemura Suda
+  - Fernando Shigueru Wakabayashi
 ---
 
 
