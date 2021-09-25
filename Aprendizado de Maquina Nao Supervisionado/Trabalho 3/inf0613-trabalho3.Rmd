@@ -72,6 +72,9 @@ normalization <- function(df, columns){
   df[,colnames(df) %in% columns] <- sweep(df[,colnames(df) %in% columns], 2, sd_features, "/")
   return(df)
 }
+
+`%notin%` <- Negate(`%in%`)
+
 #trainSet[,2:ncol(trainSet)] <- sweep(trainSet[,2:ncol(trainSet)], 2, mean_features, "-")
 #trainSet[,2:ncol(trainSet)] <- sweep(trainSet[,2:ncol(trainSet)], 2, sd_features, "/")
 
@@ -230,7 +233,12 @@ numericas = c("V2", "V10", "V11", "V12", "V13", "V14", "V17", "V19", "V20", "V21
 
 # Normalizacao minmax das variaveis numericas
 df_normalized <- min_max(df,numericas)
+
+# df_normalized <- scale(df[, numericas])
+# df_normalized <- cbind(df_normalized, df[,(colnames(df) %notin% numericas) ])
+
 # df_normalized <- normalization(df, numericas)
+
 summary(df_normalized)
 colnames(df_normalized)
 ```
@@ -262,6 +270,20 @@ p <- ggplot(data=melt_train_set, aes(x=value))+
     facet_wrap(~variable, scales='free'); p
 
 numericas_reduzido <- c("V2", "V10", "V11", "V12", "V13", "V14", "V19", "V23", "V24", "V25", "V26")
+
+categoricas_reduzido <- c("gas", "turbo", "convertible", "hatchback", "sedan", "wagon", "four", "six", "five", "three", "twelve", "two")
+
+pc <- prcomp(df_normalized[, c(numericas_reduzido,categoricas_reduzido)], center = TRUE,scale. = TRUE)
+en <- cumsum(pc$sdev / sum(pc$sdev))
+en
+
+z <- pc$x[, 1:16]
+# z <- scale(z)
+z <- min_max(z, colnames(z))
+
+nb <- NbClust(z, distance="euclidean", min.nc=2, max.nc=30, method="complete", index="all")
+
+fviz_nbclust(nb) + theme_minimal()
 
 summary(df_normalized)
 
