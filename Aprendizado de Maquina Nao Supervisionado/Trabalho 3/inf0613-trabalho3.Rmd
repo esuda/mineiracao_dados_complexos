@@ -268,22 +268,23 @@ melt_train_set <- melt(melt_train_set)
 p <- ggplot(data=melt_train_set, aes(x=value))+
     stat_density()+
     facet_wrap(~variable, scales='free'); p
-
 numericas_reduzido <- c("V2", "V10", "V11", "V12", "V13", "V14", "V19", "V23", "V24", "V25", "V26")
 
-categoricas_reduzido <- c("gas", "turbo", "convertible", "hatchback", "sedan", "wagon", "four", "six", "five", "three", "twelve", "two")
+#----------------------------------------------
+# Teste com PCA para variaveis categoricas
+# Codigo comentado para nao plotar no relatorio
+#----------------------------------------------
+# categoricas_reduzido <- c("gas", "turbo", "convertible", "hatchback", "sedan", "wagon", "4wd", "fwd","front", "four", "six", "five", "three", "twelve", "two", "dohc", "dohcv", "l", "ohc", "ohcf", "ohcv","1bbl", "2bbl", "4bbl", "idi", "mfi", "mpfi", "spdi")
+# pc <- prcomp(df_normalized[, c(numericas_reduzido,categoricas_reduzido)], center = TRUE,scale. = TRUE)
+# en <- cumsum(pc$sdev / sum(pc$sdev)); en
 
-pc <- prcomp(df_normalized[, c(numericas_reduzido,categoricas_reduzido)], center = TRUE,scale. = TRUE)
-en <- cumsum(pc$sdev / sum(pc$sdev))
-en
-
-z <- pc$x[, 1:16]
+# z <- pc$x[, 1:25]
 # z <- scale(z)
-z <- min_max(z, colnames(z))
+# z <- min_max(z, colnames(z))
 
-nb <- NbClust(z, distance="euclidean", min.nc=2, max.nc=30, method="complete", index="all")
+# nb <- NbClust(z, distance="euclidean", min.nc=2, max.nc=30, method="complete", index="all")
 
-fviz_nbclust(nb) + theme_minimal()
+# fviz_nbclust(nb) + theme_minimal()
 
 summary(df_normalized)
 
@@ -298,8 +299,8 @@ Após as implementações escreva uma análise da base de dados. Em especial, de
 Primeiramente avaliamos como estava a qualidade da informação na base de dados através da função summary onde observamos que muitas variáveis que eram para ser numéricas foram convertidas para classe de caracteres por causa dos valores "[?]" que vieram no lugar de NA. 
 Logo substituimos estes valores errados por NA e convertemos as colunas em numéricas. Em seguida avaliamos a quantidade de NAs presente nas colunas numéricas (V2, V19, V20, V22, V23, V26), seguimos a seguinte metodologia para estas variáveis, aonde havia a informação de marca
 tiravamos a mediana dentro da própria marca da variável e quando havia apenas um exemplo daquela marca ou todos os exemplos daquela marca estavam com a variável marcada como NA tiramos a mediana do dataset inteiro. Preferimos utilizar a mediana para diminuir a influência dos
-outliers. Após o tratamento dos NAs normalizamos as variáveis numéricas com a técnica min-max e transformamos também as variáveis catergóricas através do one-hot encoding porém não as utilizamos como feature do modelo. Por fim, após analisar a distribuição de todas as variáveis 
-numéricas, optamos por remover também as variáveis que visualmente apresentava uma distribuição muito diferente da normal e com outliers.
+outliers. Após o tratamento dos NAs normalizamos as variáveis numéricas com a técnica min-max e transformamos também as variáveis catergóricas através do one-hot encoding e testamos em um data set apartado a transformação via PCA (após os testes com os modelos decidimos seguir apenas com as variáveis continuas).
+Por fim, após analisar a distribuição de todas as variáveis numéricas, optamos por remover também as variáveis que visualmente apresentava uma distribuição muito diferente da normal e com outliers.
 <!-- Fim da resposta -->
 
 
@@ -322,6 +323,7 @@ b) *Gráfico da Silhueta:* Construa um gráfico com o valor da silhueta para $K$
 
 ```{r atv2b-code}
 # Construindo um gráfico com os valores da silhueta
+
 fviz_nbclust(base_1, kmeans, method="silhouette", k.max=30)
 
 ```
@@ -342,10 +344,10 @@ fviz_cluster(km, data=base_1, stand=FALSE,
              geom="point", palette="jco",
              ggtheme=theme_classic())
 
-#TESTE KMEANS COM 3 para análise de grupos
+# Teste dos labels vs clusters gerados
 base_kmeans_test <- kmeans(base_1 , 2, nstart = 25)
 test_df <- as.data.frame.matrix(table(base_kmeans_test$cluster, df_normalized$V1));test_df
-
+test_df2 <- as.data.frame.matrix(table(base_kmeans_test$cluster, df_normalized$V3));test_df2
 ```
 
 ## Análises
@@ -394,7 +396,7 @@ a) *Ajuste de Parâmetros:* Experimente com valores diferentes para os parâmetr
  db <- dbscan :: dbscan ( base_1 , eps =0.25, minPts =4)
  print(db)
 # Experimento com valores de eps e minPts
- db <- dbscan :: dbscan ( base_1 , eps = 0.35, minPts =10)
+ db <- dbscan :: dbscan ( base_1 , eps = 0.7, minPts =3)
  print(db)
 
 
@@ -404,7 +406,7 @@ b) *Determinando Ruídos:* Escolha o valor de *minPts* que obteve o melhor resul
 
 ```{r atv3b-code}
 # Encontrando o melhor eps com o kNNdistplot
-dbscan :: kNNdistplot (base_1 , k = 3)
+dbscan :: kNNdistplot (base_1 , k = 7)
 ```
 
 c) *Visualizando os Grupos:* Após a escolha dos parâmetros *eps* e *minPts*, utilize o rótulo obtido para cada amostra, indicando o grupo ao qual ela pertence, para gerar um gráfico de dispersão (atribuindo cores diferentes para cada grupo).
@@ -445,23 +447,63 @@ Feitas essas escolhas, executamos kNNdistplot e verificamos o valor de cotovelo,
 	para responder as perguntas a seguir  -->
 
 ```{r atv4-code}
+# Algoritmo de avaliacao do melhor K a ser escolhido
+# K = 2 escolhido como K otimo
+nb <- NbClust ( base_1 , distance ="euclidean",min.nc =2 , max.nc =30 , method ="complete",index ="all")
+
+# Aplicando o k-means com o k escolhido 
+km <- eclust(base_1, "kmeans", k=2,nstart=25, graph=FALSE)
+
+# Construindo um gráfico de dispersão
+fviz_cluster(km, data=base_1, stand=FALSE, 
+             ellipse=FALSE, show.clust.cent=FALSE, 
+             geom="point", palette="jco",
+             ggtheme=theme_classic())
+
+# Teste dos labels vs clusters
+base_kmeans_test <- kmeans(base_1 , 2, nstart = 25)
+test_df <- as.data.frame.matrix(table(base_kmeans_test$cluster, df_normalized$V1));test_df
+test_df2 <- as.data.frame.matrix(table(base_kmeans_test$cluster, df_normalized$V3));test_df2
+
+
+# Aplicando o DBscan com os parâmetros escolhidos
+ db <- dbscan :: dbscan ( base_1 , eps =0.5 , minPts =4)
+ print(db)
+
+# Construindo um gráfico de dispersão
+fviz_cluster(db, data=base_1, stand=FALSE, 
+             ellipse=FALSE, show.clust.cent=FALSE, 
+             geom="point", palette="jco",
+             ggtheme=theme_classic())
+
+#analise matriz cruzada
+
+#base_kmeans_test <- kmeans(base_1 , 2, nstart = 20)
+analise <- as.data.frame.matrix(table(db$cluster, df_normalized$V1));analise
+analise2 <- as.data.frame.matrix(table(db$cluster, df_normalized$V3));analise2
 
 ```
 
 Com base nas atividades anteriores, faça uma conclusão dos seus experimentos respondendo às seguintes perguntas: 
 
 a) Qual dos métodos apresentou melhores resultados? Justifique.
-K-means pois apesar do menor número de agrupamentos, foi possível interpretar leve separação, ainda que grosseira, em positivos e negativos, no caso de DBScan, praticamente todos os pontos eram agrupados em um único grupo independentemente do número de partiçoes.
+
 b) Quantos agrupamentos foram obtidos?
-Dois
+
 c) Analisando o campo `symboling` e o grupo designado para cada amostra, os agrupamentos conseguiram separar os níveis de risco?
-Não
+
 d) Analisando o campo `make` que contém as marcas dos carros, os agrupamentos conseguiram separar as marcas?
 
 
 **Respostas:** <!-- Escreva sua resposta abaixo -->
+a) K-means pois apesar do menor número de agrupamentos, foi possível interpretar leve separação, ainda que grosseira, em symboling positivos e negativos, no caso de DBScan, praticamente todos os pontos eram agrupados em um único grupo independentemente do número de partiçoes.
 
+b) Dois agrupamentos.
 
+c) Para o K-Means o algoritmo não conseguiu separar de forma adequada os grupos pois para o nível de risco igual a 0, ele se distribuiu igualmente entre os dois clusters.
+Já para o DB Scan, a maior parte dos carros, independente do nível de risco, foi classificado em apenas um cluster.
+
+d) Como utilizamos K = 2 pudemos observar que o algoritmo de K-Means separou aproximadamente os carros de maior valor (Audi, BMW, Mercedez, Porsche e Volvo) das marcas mais populares, já para o DBScan quase todos os carros foram agrupados em um único grupo.
 <!-- Fim da resposta -->
 
 
