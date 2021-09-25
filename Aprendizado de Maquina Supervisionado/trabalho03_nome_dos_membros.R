@@ -1,7 +1,7 @@
 #----------------------------------------------------------------#
 # INF-0615 Aprendizado de Maquina Supervisionado I       
 #                       
-####### Código de apoio ao Trabalho 03 da disciplina INF-0615 #######
+####### Cï¿½digo de apoio ao Trabalho 03 da disciplina INF-0615 #######
 #----------------------------------------------------------------#
 # Nome COMPLETO dos integrantes dp grupo:  
 # - Daniel Noriaki Kurosawa                                        
@@ -11,27 +11,27 @@
 #----------------------------------------------------------------#
 
 #------------------------------------------------------------------
-#0 - Opções iniciais
+#0 - Opï¿½ï¿½es iniciais
 #------------------------------------------------------------------
 
-#setwd("/Users/nkuros/Documents/mineiracao_dados_complexos/Aprendizado de Maquina Supervisionado/Atividade 3/")
+# setwd("/Users/nkuros/Documents/mineiracao_dados_complexos/Aprendizado de Maquina Supervisionado/")
 #rm(list = ls())
 set.seed(42)
 
 #------------------------------------------------------------------
 #1 - Importa Bibliotecas 
 #------------------------------------------------------------------
-#install.packages('rpart') 
-#install.packages('rpart.plot') 
-#install.packages('caret') 
-#install.packages('ramify') 
-#install.packages('ggplot2') 
-#install.packages('dplyr') 
-#install.packages('hrbrthemes') 
-#install.packages('rattle')
-#install.packages('reshape2') 
-#install.packages('ggplot2') 
-#install.packages('randomForest') 
+# install.packages('rpart') 
+# install.packages('rpart.plot') 
+# install.packages('caret') 
+# install.packages('ramify') 
+# install.packages('ggplot2') 
+# install.packages('dplyr') 
+# install.packages('hrbrthemes') 
+# install.packages('rattle')
+# install.packages('reshape2') 
+# install.packages('ggplot2') 
+# install.packages('randomForest') 
 
 library(rpart)
 library(rpart.plot)
@@ -46,13 +46,13 @@ library(ggplot2)
 library(randomForest)
 
 #------------------------------------------------------------------
-#2 - Funções úteis
+#2 - Funï¿½ï¿½es ï¿½teis
 #------------------------------------------------------------------
 
 # Funcao que calcula a matriz de confusao relativa para 3 classes
 calculaMatrizConfusaoRelativa <- function(cm){
     
-    # Aplicamos a transposição para garantir que a referencia
+    # Aplicamos a transposiï¿½ï¿½o para garantir que a referencia
     # fique nas linhas e a predicao nas colunas
     cm_absolute = t(cm$table)
     
@@ -104,9 +104,10 @@ ret_feature_importances <- function(tree_model){
 }
 
 
-
-
-
+getmode <- function(v) {
+   uniqv <- unique(v)
+   uniqv[which.max(tabulate(match(v, uniqv)))]
+}
 
 
 
@@ -132,25 +133,25 @@ summary(data)
 
 dim(data)
 
-#3.3 - Resetando índice das colunas
+#3.3 - Resetando ï¿½ndice das colunas
 row.names(data) <- NULL
 
 #3.4 - verificando desbalanceamento
 table(data$label)
 
 #------------------------------------------------------------------
-# 4- Separação Treino / Validação
+# 4- Separaï¿½ï¿½o Treino / Validaï¿½ï¿½o
 #------------------------------------------------------------------
 
-# 4.1 - Separação randômica 
+# 4.1 - Separaï¿½ï¿½o randï¿½mica 
 randomTrainValIndexes <- sample(1:nrow(data), size=0.8*nrow(data))
 
-# 4.2 - Criação dos dataframes de Treino e validação
+# 4.2 - Criaï¿½ï¿½o dos dataframes de Treino e validaï¿½ï¿½o
 dataTrain <- data[randomTrainValIndexes, ]
 dim(dataTrain)
 dataVal  <- data[-randomTrainValIndexes, ] 
 dim(dataVal)
-# 4.3 - Verificando proporção dos labels
+# 4.3 - Verificando proporï¿½ï¿½o dos labels
 #train
 table(dataTrain$label)/length(dataTrain$label)
 #validation
@@ -158,7 +159,7 @@ table(dataVal$label)/length(dataVal$label)
 
 
 #------------------------------------------------------------------
-# 5- Treinando Baseline - Árvore de decisão
+# 5- Treinando Baseline - ï¿½rvore de decisï¿½o
 #------------------------------------------------------------------
 
 #5.1 - criando modelo
@@ -174,13 +175,13 @@ treeModel_baseline <- rpart(formula=label ~ .,
 #summary(treeModel)
 #prp(treeModel)
 
-#5.3 - importancia das variáveis
+#5.3 - importancia das variï¿½veis
 importance_per_features <- treeModel_baseline$variable.importance
 #importance_per_features
 relative_importance <- importance_per_features/sum(importance_per_features)
 relative_importance
 
-#5.4 - EDA (opcional) das variáveis mais apontadas como importantes
+#5.4 - EDA (opcional) das variï¿½veis mais apontadas como importantes
 table(dataTrain$label)
 
 #5.4.1- date_death_or_discharge
@@ -213,21 +214,21 @@ p_date_admission_hospital
 #5.4.4 - country
 table(data$country, data$label)
 
-#5.5 - Avaliação do Baseline
+#5.5 - Avaliaï¿½ï¿½o do Baseline
 
-#5.5.1 - Criação das previsões do modelo
+#5.5.1 - Criaï¿½ï¿½o das previsï¿½es do modelo
 val_pred_baseline <- predict(treeModel_baseline, dataVal, type = "class")
-#5.5.1 - Matriz de confusão 
+#5.5.1 - Matriz de confusï¿½o 
 cm_baseline <- confusionMatrix(data = as.factor(val_pred_baseline), 
                                reference = as.factor(dataVal$label), 
                                positive='forgery')
 cm_baseline
 
-#5.5.2 - Matriz de confusão relativa
+#5.5.2 - Matriz de confusï¿½o relativa
 cm_baseline_relative <- calculaMatrizConfusaoRelativa(cm_baseline)
 cm_baseline_relative
 
-#5.5.3 - Acurácia Balanceada
+#5.5.3 - Acurï¿½cia Balanceada
 acc_baseline_balanceada <-calcula_acc_balanceada(cm_baseline_relative)
 acc_baseline_balanceada
 
@@ -241,13 +242,13 @@ acc_baseline_balanceada
 ###### OBSERVACAO ULTRA IMPORTANTE
 ###### VERIFICAR SE ESTA CORRETO O BALANCEAMENTO 
 
-#6.1.1 - Criação dos pesos
+#6.1.1 - Criaï¿½ï¿½o dos pesos
 
 label_frequency = table(dataTrain$label)
 label_frequency 
 relative_label_frequency =label_frequency/sum(label_frequency)
 relative_label_frequency
-#6.1.2 - Criação do vetor dos pesos
+#6.1.2 - Criaï¿½ï¿½o do vetor dos pesos
 weights <- rep(0.0, dim(dataTrain)[1])
 
 weight_dead = 1-relative_label_frequency[2]-relative_label_frequency[3]
@@ -314,14 +315,14 @@ evaluate_model_ret_acc_relative(treeModel_undersampling_baseline, dataVal)
 
 
 #------------------------------------------------------------------
-# 7- Variação do tamanho das árvores
+# 7- Variaï¿½ï¿½o do tamanho das ï¿½rvores
 #------------------------------------------------------------------
 
-#Criaçao do Data.Frame para salvar os valores de acuracia
+#Criaï¿½ao do Data.Frame para salvar os valores de acuracia
 accPerDepth <- data.frame(depth=numeric(15), accTrain=numeric(15), accVal=numeric(15))
 summary(accPerDepth)
 
-#for para treinar árvores com tamanhos variádos (só depth nesse caso)
+#for para treinar ï¿½rvores com tamanhos variï¿½dos (sï¿½ depth nesse caso)
 #utilizando base c/ undersampling
 for (maxDepth in 1:25){
     treeModel <- rpart(formula=label ~ .,
@@ -366,7 +367,7 @@ ggplot(data=accPerDepth, aes(x=depth, y=value, colour=variable)) + geom_line() +
 #nesse caso esta entre 6 e 7
 
 #------------------------------------------------------------------
-# 8- Exploração do Subconjunto de features
+# 8- Exploraï¿½ï¿½o do Subconjunto de features
 #------------------------------------------------------------------
 
 #### ALGUEM FAZ UM FOR PRA FAZER UMA MISTURA DE VARIAVEIS *
@@ -434,11 +435,11 @@ evaluate_model_ret_acc_relative(treeModel_subset_3, dataVal)
 
 ret_feature_importances(treeModel_subset_3)
 # Leitura da base de Teste. Descomentem as linhas abaixo quando o 
-# conjunto de teste estiver disponível.
+# conjunto de teste estiver disponï¿½vel.
 
 #test_set <- read.csv("test_set_patient_status_covid19.csv", stringsAsFactors = T) # Descomentar
 
-# As duas linhas abaixo são um trick para corrigir os "levels" na
+# As duas linhas abaixo sï¿½o um trick para corrigir os "levels" na
 # coluna country. Ele apenas adiciona 1 exemplo de treino na primeira
 # linha do teste e depois retira-o para obter o test_set original. 
 # Nao se preocupem, eh apenas para nivelamento interno do R. 
@@ -447,3 +448,359 @@ ret_feature_importances(treeModel_subset_3)
 
 #temporary_test <- rbind(train_val_set[1,], test_set) # Descomentar
 #test_set <- temporary_test[-1,] # Descomentar
+
+
+#------------------------------------------------------------------
+# 9- Florestas aleatÃ³rias
+#------------------------------------------------------------------
+
+#9.1 - teste com todas as features
+nTreeList = c(1, 5, 10, 25, 50, 100, 250, 500, 1000)
+accPerNTrees <- data.frame(ntree=numeric(length(nTreeList)), 
+                           accTrain=numeric(length(nTreeList)), 
+                           accVal=numeric(length(nTreeList)))
+
+for (i in 1:length(nTreeList)){
+    rfModel <- randomForest(formula=label ~ ., 
+                            data= subsetDataTrain,
+                            ntree=nTreeList[i],
+                            mtry=3)
+    
+    # Avaliando no conjunto de treinamento
+    train_pred <- predict(rfModel, subsetDataTrain, type="class")
+    
+    cm_train <- confusionMatrix(data = as.factor(train_pred), 
+                                reference = as.factor(subsetDataTrain$label), 
+                                positive='forgery')
+    
+    cm_train_relative <- calculaMatrizConfusaoRelativa(cm_train)
+    acc_bal_train <- calcula_acc_balanceada(cm_train_relative)
+    
+    # Avaliando no conjunto de validacao
+    val_pred <- predict(rfModel, dataVal, type="class")
+    cm_val <- confusionMatrix(data = as.factor(val_pred), 
+                              reference = as.factor(dataVal$label), 
+                              positive='forgery')
+    
+    cm_val_relative <- calculaMatrizConfusaoRelativa(cm_val)
+    acc_bal_val <- calcula_acc_balanceada(cm_val_relative)
+    
+    accPerNTrees[i,] = c(nTreeList[i], 
+                         acc_bal_train, 
+                         acc_bal_val)
+}
+
+
+accPerNTrees <- melt(accPerNTrees, id="ntree")  # convert to long format
+ggplot(data=accPerNTrees, aes(x=ntree, y=value, colour=variable)) + geom_line() + geom_point()
+
+
+#9.1 teste com features n2
+
+nTreeList = c(1, 5, 10, 25, 50, 100, 250, 500, 1000)
+accPerNTrees <- data.frame(ntree=numeric(length(nTreeList)), 
+                           accTrain=numeric(length(nTreeList)), 
+                           accVal=numeric(length(nTreeList)))
+
+
+for (i in 1:length(nTreeList)){
+    rfModel <- randomForest(formula=label ~ date_death_or_discharge+ age+
+                               longitude+ latitude+ date_admission_hospital, 
+                            data= subsetDataTrain,
+                            ntree=nTreeList[i],
+                            mtry=3)
+    
+    # Avaliando no conjunto de treinamento
+    train_pred <- predict(rfModel, subsetDataTrain, type="class")
+    
+    cm_train <- confusionMatrix(data = as.factor(train_pred), 
+                                reference = as.factor(subsetDataTrain$label), 
+                                positive='forgery')
+    
+    cm_train_relative <- calculaMatrizConfusaoRelativa(cm_train)
+    acc_bal_train <- calcula_acc_balanceada(cm_train_relative)
+    
+    # Avaliando no conjunto de validacao
+    val_pred <- predict(rfModel, dataVal, type="class")
+    cm_val <- confusionMatrix(data = as.factor(val_pred), 
+                              reference = as.factor(dataVal$label), 
+                              positive='forgery')
+    
+    cm_val_relative <- calculaMatrizConfusaoRelativa(cm_val)
+    acc_bal_val <- calcula_acc_balanceada(cm_val_relative)
+    
+    accPerNTrees[i,] = c(nTreeList[i], 
+                         acc_bal_train, 
+                         acc_bal_val)
+}
+
+accPerNTrees <- melt(accPerNTrees, id="ntree")  # convert to long format
+ggplot(data=accPerNTrees, aes(x=ntree, y=value, colour=variable)) + geom_line() + geom_point()
+
+
+#9.3 Melhorando intervalo de busca
+
+nTreeList = c(1:100)
+accPerNTrees <- data.frame(ntree=numeric(length(nTreeList)), 
+                           accTrain=numeric(length(nTreeList)), 
+                           accVal=numeric(length(nTreeList)))
+
+
+for (i in 1:length(nTreeList)){
+    rfModel <- randomForest(formula=label ~ ., 
+                            data= subsetDataTrain,
+                            ntree=nTreeList[i],
+                            mtry=sqrt(length(colnames(subsetDataTrain))))
+    
+    # Avaliando no conjunto de treinamento
+    train_pred <- predict(rfModel, subsetDataTrain, type="class")
+    
+    cm_train <- confusionMatrix(data = as.factor(train_pred), 
+                                reference = as.factor(subsetDataTrain$label), 
+                                positive='forgery')
+    
+    cm_train_relative <- calculaMatrizConfusaoRelativa(cm_train)
+    acc_bal_train <- calcula_acc_balanceada(cm_train_relative)
+    
+    # Avaliando no conjunto de validacao
+    val_pred <- predict(rfModel, dataVal, type="class")
+    cm_val <- confusionMatrix(data = as.factor(val_pred), 
+                              reference = as.factor(dataVal$label), 
+                              positive='forgery')
+    
+    cm_val_relative <- calculaMatrizConfusaoRelativa(cm_val)
+    acc_bal_val <- calcula_acc_balanceada(cm_val_relative)
+    
+    accPerNTrees[i,] = c(nTreeList[i], 
+                         acc_bal_train, 
+                         acc_bal_val)
+}
+
+accPerNTrees <- melt(accPerNTrees, id="ntree")  # convert to long format
+ggplot(data=accPerNTrees, aes(x=ntree, y=value, colour=variable)) + geom_line() + geom_point()
+
+#ENCONTRAR MAIS FACIL E TREINAR COM MELHOR MODELO <---- VALIDAR***
+
+max_acc_validation = max(accPerNTrees[accPerNTrees$variable == 'accVal',]['value'])
+
+min_n_tree = min(accPerNTrees[(accPerNTrees['value'] == max_acc_validation) &
+             (accPerNTrees['variable'] == 'accVal') ,'ntree'])
+
+#acho que tem alguma pergunta que toca nesse numero minimo
+print(min_n_tree)
+
+
+#9.4 Treinando floresta com melhor numero de arvores
+
+treeForest_n3 <- randomForest(formula=label ~ ., 
+                            data= subsetDataTrain,
+                            ntree=3,
+                            mtry=sqrt(length(colnames(subsetDataTrain))))
+
+
+
+#USAR ESSA FX para O TESTE
+evaluate_model_ret_acc_relative(treeForest_n3, dataVal)
+
+
+
+
+#------------------------------------------------------------------
+# 10- EXTRA
+#------------------------------------------------------------------
+
+#10.1 Cria matriz com 0 do tamanho do DataVal
+
+getRandomForestResults <- function(ntree, m, trainSet, valSet){
+    
+  
+  # Seleciona os exemplos das classes positivas e negativas
+  #dataNeg <- trainSet[trainSet$y == "no",]
+  #dataPos <- trainSet[trainSet$y == "yes",] 
+    # Seleciona os exemplos das classes
+    dataTrain_dead <- dataTrain[dataTrain$label == 'dead',]
+    dataTrain_onTreatment <- dataTrain[dataTrain$label == 'onTreatment',]
+    dataTrain_recovered <-dataTrain[dataTrain$label == 'recovered',]
+
+  #lowest_samples <- min(dim(dataNeg)[1], dim(dataPos)[1])
+    #seleciona o menor dos valores
+    lowest_samples <- min (nrow(dataTrain_dead), nrow(dataTrain_onTreatment), nrow(dataTrain_recovered) )
+  
+    print("Numero de elementos na classe 'dead':")
+    print(dim(dataTrain_dead))
+    print("Numero de elementos na classe 'onTreatment':")
+    print(dim(dataTrain_onTreatment))
+    print("Numero de elementos na classe 'recovered':")
+    print(dim(dataTrain_recovered))
+    print("Menor desse valores:")
+    
+    print(lowest_samples)
+  
+  # Matriz de tamano N x M inicializada com zeros. Em que N ÃƒÂ© o nÃƒÂºmero
+  # de exemplos no conjunto de validaÃƒÂ§ÃƒÂ£o e M ÃƒÂ© o nÃƒÂºmero de ÃƒÂ¡rvores que
+  # teremos no Ensemble. Cada coluna terÃƒÂ¡ os valores preditos por  
+  # cada ÃƒÂ¡rvore no Ensemble. 
+    valPredictedClasses <- matrix(0, nrow = nrow(valSet), ncol = ntree)
+    trainPredictedClasses <- matrix(0, nrow = nrow(trainSet), ncol = ntree)
+  
+  
+    for(i in 1:ntree){
+    
+        nsamples <- round(runif(1, min=0.85, max=1.0)*lowest_samples)
+    
+    # Seleciona, com reposiÃƒÂ§ÃƒÂ£o (ja que o Bagging faz parte da Random Forest), 
+    # os ÃƒÂ­ndices da classe negativa
+    #NoIdx <- sample(1:nrow(dataNeg), nsamples, replace = TRUE)
+    #YesIdx <- sample(1:nrow(dataPos), nsamples, replace = TRUE)
+        Idx_dead <- sample(1:nrow(dataTrain_dead), nsamples, replace = TRUE)
+        Idx_onTreatment <- sample(1:nrow(dataTrain_onTreatment), nsamples, replace = TRUE)
+        Idx_recovered <- sample(1:nrow(dataTrain_recovered), nsamples, replace = TRUE)
+    
+    # Selecionamos aleatoriamente um subconjunto das features
+    # originais (desconsiderando o target). JÃƒÂ¡ que, cada arvore 
+    # na random forest, eh treinada com um subconjunto dos dados
+    # tomados com reposicao (duas linha de comando a cima) e um 
+    # subconjunto das features.
+        featuresIdx <- sample(1:(ncol(trainSet)-1), m, replace = FALSE)
+    #aqui se diferencia dos anteriores <<<<<<<<<<<<<
+    # Como desconsideramos o target anteriormente,
+    # temos que adiciona-lo de volta para o modelo treinar
+        featuresIdx <- c(featuresIdx, ncol(trainSet)) 
+    
+    # Cria-se o conjunto de treino baseado na selecao de exemplos
+    # e features das linhas anteriores
+        subsetDataTrain <- rbind (dataTrain_dead[Idx_dead,],
+                                  dataTrain_onTreatment[Idx_onTreatment,],
+                                  dataTrain_recovered[Idx_recovered,])
+    
+        treeModel <- rpart(formula=label ~ ., 
+                           data=subsetDataTrain, method="class",
+                           control=rpart.control(minsplit=2, cp=0.0, xval = 0),
+                           parms= list(split="information"))
+        
+        #treino
+        trainPreds <- predict(treeModel, trainSet, type = "class")
+        trainPredictedClasses[,i] <- trainPreds    
+        #validaÃƒÂ§ÃƒÂ£o
+        valPreds <- predict(treeModel, valSet, type = "class")
+        valPredictedClasses[,i] <- valPreds 
+
+    
+    }
+    
+    df <-data.frame(apply(valPredictedClasses,1, FUN = ,getmode))
+    colnames(df) <- 'predicted'
+    rownames(df) <- rownames(valSet)
+    df[df['predicted'] == 1]  <- 'dead'
+    df[df['predicted'] == 2]  <- 'onTreatment'
+    df[df['predicted'] == 3]  <- 'recovered'
+    
+    cm <- confusionMatrix(data = as.factor(df$predicted), 
+                          reference = as.factor(valSet$label), 
+                          positive='yes')
+    
+    #TREINO
+    accTrainRandomForest <- c(ntree-1)
+    #VALIDACAO
+    accValRandomForest <- c(ntree-1)
+    
+    for(i in 2:ntree){
+        
+        #TREINO        
+        df_train <-data.frame(apply(trainPredictedClasses[,1:i],1, FUN = ,getmode))
+        colnames(df_train) <- 'predicted'
+        rownames(df_train) <- rownames(trainSet)
+        df_train[df_train['predicted'] == 1]  <- 'dead'
+        df_train[df_train['predicted'] == 2]  <- 'onTreatment'
+        df_train[df_train['predicted'] == 3]  <- 'recovered'
+
+        cm_train <- confusionMatrix(data = as.factor(df_train$predicted), 
+                              reference = as.factor(trainSet$label), 
+                              positive='yes')
+        
+        cm_train_relative <- calculaMatrizConfusaoRelativa(cm_train)    
+        acc_bal_train <- calcula_acc_balanceada(cm_train_relative)       
+        accTrainRandomForest[i-1] <- acc_bal_train        
+        
+        
+        
+        #VALIDACAO        
+        df_val <-data.frame(apply(valPredictedClasses[,1:i],1, FUN = ,getmode))
+        colnames(df_val) <- 'predicted'
+        rownames(df_val) <- rownames(valSet)
+        df_val[df_val['predicted'] == 1]  <- 'dead'
+        df_val[df_val['predicted'] == 2]  <- 'onTreatment'
+        df_val[df_val['predicted'] == 3]  <- 'recovered'
+
+        cm_val <- confusionMatrix(data = as.factor(df_val$predicted), 
+                              reference = as.factor(valSet$label), 
+                              positive='yes')
+        
+        cm_val_relative <- calculaMatrizConfusaoRelativa(cm_val)    
+        acc_bal_val <- calcula_acc_balanceada(cm_val_relative)       
+        accValRandomForest[i-1] <- acc_bal_val
+        }      
+    
+    
+    
+    
+    
+    
+    plot(2:ntree, accValRandomForest, xlab = "Number of classifiers", 
+         ylab = "Balanced Acc", col="blue", type="o",        
+         ylim=c(min(accValRandomForest, accTrainRandomForest), 
+            max(accValRandomForest,accTrainRandomForest)))
+
+        
+        
+
+    
+    points(accTrainRandomForest, col="red", pch=".")
+    lines(accTrainRandomForest, col="red", lty=1)
+    
+    legend(20, 0.65, legend=c("AccValRandomForest",
+                             "accTrainRandomForest"), 
+       col=c("blue","red" ), pch=c("__"), cex=0.7, pt.cex = 1)
+
+    return(accValRandomForest)
+
+    
+    
+}
+
+
+#Rodando primeiro modelo , escolhendo m como sqrt
+
+m <- sqrt((ncol(dataTrain)))
+#valPredictedClasses <- getRandomForestResults(5, m, dataTrain, dataVal)
+df <- getRandomForestResults(75, m, dataTrain, dataVal)
+
+# VariaÃ§Ã£o do nÃºmero de features
+m <- ncol(dataTrain)/2 
+
+df_2 <- getRandomForestResults(75, m, dataTrain, dataVal)
+
+
+#variaÃ§Ã£o do nÃºmero de feature* (na verdade Ã© M)
+m <- (ncol(dataTrain)*3)/4
+
+df_3 <- getRandomForestResults(75, m, dataTrain, dataVal)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
