@@ -44,6 +44,7 @@ library(ppclust)
 library(fclust)
 library(apcluster)
 library ( NbClust )
+library(reshape2)
 
 
 #Funções extras 
@@ -62,8 +63,17 @@ min_max <- function(df, columns){
   df[,colnames(df) %in% columns] <- sweep(df[,colnames(df) %in% columns], 2, min_features, "-")
   df[,colnames(df) %in% columns] <- sweep(df[,colnames(df) %in% columns], 2, diff, "/")
   return(df)
-
 }
+
+normalization <- function(df, columns){
+  mean_features <- apply(df[,colnames(df) %in% columns], 2, mean);mean_features
+  sd_features <- apply(df[,colnames(df) %in% columns], 2, sd); sd_features 
+  df[,colnames(df) %in% columns] <- sweep(df[,colnames(df) %in% columns], 2, mean_features, "-")
+  df[,colnames(df) %in% columns] <- sweep(df[,colnames(df) %in% columns], 2, sd_features, "/")
+  return(df)
+}
+#trainSet[,2:ncol(trainSet)] <- sweep(trainSet[,2:ncol(trainSet)], 2, mean_features, "-")
+#trainSet[,2:ncol(trainSet)] <- sweep(trainSet[,2:ncol(trainSet)], 2, sd_features, "/")
 
 
 # Configure ambiente de trabalho na mesma pasta 
@@ -217,17 +227,10 @@ colunas_full = c("V2", "V10", "V11", "V12", "V13", "V14", "V17", "V19", "V20", "
 colunas = c("V2", "V10", "V11", "V12", "V13", "V14", "V17", "V19", "V20", "V21", "V22", "V23", "V24", "V25", "V26")
 numericas = c("V2", "V10", "V11", "V12", "V13", "V14", "V17", "V19", "V20", "V21", "V22", "V23", "V24", "V25", "V26")
 
-numericas_reduzido = c("V2", "V10", "V11", "V12", "V13", "V14", "V19", "V23", "V24", "V25", "V26")
-
-melt_train_set <- df[, numericas]
-melt_train_set <- melt(melt_train_set)
-
-p <- ggplot(data=melt_train_set, aes(x=value))+
-    stat_density()+
-    facet_wrap(~variable, scales='free'); p
 
 # Normalizacao minmax das variaveis numericas
 df_normalized <- min_max(df,numericas)
+# df_normalized <- normalization(df, numericas)
 summary(df_normalized)
 colnames(df_normalized)
 ```
@@ -251,6 +254,15 @@ df_normalized = onehot_features(df_normalized, 'V15')
 df_normalized = onehot_features(df_normalized, 'V16')
 df_normalized = onehot_features(df_normalized, 'V18')
 
+melt_train_set <- df[, numericas]
+melt_train_set <- melt(melt_train_set)
+
+p <- ggplot(data=melt_train_set, aes(x=value))+
+    stat_density()+
+    facet_wrap(~variable, scales='free'); p
+
+numericas_reduzido <- c("V2", "V10", "V11", "V12", "V13", "V14", "V19", "V23", "V24", "V25", "V26")
+
 summary(df_normalized)
 
 ```
@@ -261,8 +273,11 @@ Após as implementações escreva uma análise da base de dados. Em especial, de
 
 
 **Resposta:** <!-- Escreva sua resposta abaixo -->
-
-
+Primeiramente avaliamos como estava a qualidade da informação na base de dados através da função summary onde observamos que muitas variáveis que eram para ser numéricas foram convertidas para classe de caracteres por causa dos valores "[?]" que vieram no lugar de NA. 
+Logo substituimos estes valores errados por NA e convertemos as colunas em numéricas. Em seguida avaliamos a quantidade de NAs presente nas colunas numéricas (V2, V19, V20, V22, V23, V26), seguimos a seguinte metodologia para estas variáveis, aonde havia a informação de marca
+tiravamos a mediana dentro da própria marca da variável e quando havia apenas um exemplo daquela marca ou todos os exemplos daquela marca estavam com a variável marcada como NA tiramos a mediana do dataset inteiro. Preferimos utilizar a mediana para diminuir a influência dos
+outliers. Após o tratamento dos NAs normalizamos as variáveis numéricas com a técnica min-max e transformamos também as variáveis catergóricas através do one-hot encoding porém não as utilizamos como feature do modelo. Por fim, após analisar a distribuição de todas as variáveis 
+numéricas, optamos por remover também as variáveis que visualmente apresentava uma distribuição muito diferente da normal e com outliers.
 <!-- Fim da resposta -->
 
 
@@ -279,31 +294,6 @@ base_1 = df_normalized[, numericas_reduzido]
 
 fviz_nbclust(base_1, kmeans, method="wss",k.max=30)
 
-
-
-
-
-
-
-
-# Aplica a tecnica K-Means
-base_kmeans <- eclust(base_1, "kmeans", k=2,nstart=25, graph=TRUE)
-
-#TESTE KMEANS COM 3 para análise de grupos
-base_kmeans_test <- kmeans(base_1 , 4, nstart = 25)
-test_df <- as.data.frame.matrix(table(base_kmeans_test$cluster, df_normalized$V1));test_df
-
-### <<<<<<<<----- TESTE DE CORRELAÇÃO * APLICAR FX , tirar/ colocar  vars *
-
-# Mostra o numero do grupo de cada amostra
-base_kmeans$cluster
-
-
-# Visualiza os grupos
-
-
-
-
 ```
 
 b) *Gráfico da Silhueta:* Construa um gráfico com o valor da silhueta para $K$ variando de $2$ a $30$.
@@ -318,15 +308,22 @@ c) *Escolha do $K$:* Avalie os gráficos gerados nos itens anteriores e escolha 
 
 ```{r atv2c-code}
 # Algoritmo de avaliacao do melhor K a ser escolhido
-
+# K = 2 escolhido como K otimo
 nb <- NbClust ( base_1 , distance ="euclidean",min.nc =2 , max.nc =30 , method ="complete",index ="all")
 
 # Aplicando o k-means com o k escolhido 
-base_kmeans <- eclust(base_1, "kmeans", k=7,nstart=25, graph=FALSE)
+km <- eclust(base_1, "kmeans", k=2,nstart=25, graph=FALSE)
 
 # Construindo um gráfico de dispersão
-fviz_cluster(base_kmeans, geom="point", ellipse.type="norm")
-base_kmeans$cluster
+fviz_cluster(km, data=base_1, stand=FALSE, 
+             ellipse=FALSE, show.clust.cent=FALSE, 
+             geom="point", palette="jco",
+             ggtheme=theme_classic())
+
+#TESTE KMEANS COM 3 para análise de grupos
+base_kmeans_test <- kmeans(base_1 , 2, nstart = 25)
+test_df <- as.data.frame.matrix(table(base_kmeans_test$cluster, df_normalized$V1));test_df
+
 ```
 
 ## Análises
@@ -335,7 +332,9 @@ Descreva cada um dos gráficos gerados nos itens acima e analise-os. Inclua na s
 
 
 **Resposta:** <!-- Escreva sua resposta abaixo -->
-
+Observando a soma das distâncias intra cluster, supomos que o k ótimo se dá entre 2 e 10 aproximadamente (região de cotovelo).
+Ao gerar o grafico de silhueta, o valor k=2 foi apontado como melhor escolha (maior valor de largura de silhueta).
+Finalmente, tal valor foi corroborado pelo NbClust, em que 7 dos parametros indicaram 2 como o valor ótimo. Adicionalmente, podemos perceber pelo gráfico da derivada do D index gerado (grafico a direita) que o valor mais negativo da segunda derivada se dá em k=2 indicando ser o ponto de maior desaceleração da curva D (grafico à esquerda)
 
 <!-- Fim da resposta -->
 
@@ -346,15 +345,36 @@ Nesta atividade, você deverá agrupar os dados com o algoritmo *DBscan*. Para i
 a) *Ajuste de Parâmetros:* Experimente com valores diferentes para os parâmetros *eps* e *minPts*. Verifique o impacto dos diferentes valores nos agrupamentos.
 
 ```{r atv3a-code}
+
+
 # Experimento com valores de eps e minPts
- db <- dbscan :: dbscan ( base_1 , eps=1 , minPts=5)
+ db <- dbscan :: dbscan ( base_1 , eps =0.5, minPts =2)
+ print(db)
+ # Experimento com valores de eps e minPts
+ db <- dbscan :: dbscan ( base_1 , eps =0.5, minPts =3)
  print(db)
 # Experimento com valores de eps e minPts
- db <- dbscan :: dbscan ( base_1 , eps =0.25, minPts =5)
+ db <- dbscan :: dbscan ( base_1 , eps =0.5, minPts =4)
  print(db)
 # Experimento com valores de eps e minPts
- db <- dbscan :: dbscan ( base_1 , eps =0.10 , minPts =5)
+ db <- dbscan :: dbscan ( base_1 , eps =0.5, minPts =5)
  print(db)
+
+
+ # Experimento com valores de eps e minPts
+ db <- dbscan :: dbscan ( base_1 , eps=1 , minPts=4)
+ print(db)
+ 
+ # Experimento com valores de eps e minPts
+ db <- dbscan :: dbscan ( base_1 , eps =0.5, minPts =4)
+ print(db)
+# Experimento com valores de eps e minPts
+ db <- dbscan :: dbscan ( base_1 , eps =0.25, minPts =4)
+ print(db)
+# Experimento com valores de eps e minPts
+ db <- dbscan :: dbscan ( base_1 , eps = 0.35, minPts =10)
+ print(db)
+
 
 ```
 
@@ -362,14 +382,14 @@ b) *Determinando Ruídos:* Escolha o valor de *minPts* que obteve o melhor resul
 
 ```{r atv3b-code}
 # Encontrando o melhor eps com o kNNdistplot
-dbscan :: kNNdistplot (base_1 , k =5)
+dbscan :: kNNdistplot (base_1 , k = 3)
 ```
 
 c) *Visualizando os Grupos:* Após a escolha dos parâmetros *eps* e *minPts*, utilize o rótulo obtido para cada amostra, indicando o grupo ao qual ela pertence, para gerar um gráfico de dispersão (atribuindo cores diferentes para cada grupo).
 
 ```{r atv3c-code}
 # Aplicando o DBscan com os parâmetros escolhidos
- db <- dbscan :: dbscan ( base_1 , eps =0.60 , minPts =5)
+ db <- dbscan :: dbscan ( base_1 , eps =0.5 , minPts =4)
  print(db)
 
 # Construindo um gráfico de dispersão
@@ -391,7 +411,9 @@ Descreva os experimentos feitos para a escolha dos parâmetros *eps* e *minPts*.
 
 
 **Resposta:** <!-- Escreva sua resposta abaixo -->
-
+Primeiramente, fixamos eps para escolha de um valorde minPts adequado.
+Feito isso, fixamos minPts no melhor valor obtidoe variamos eps para encontrar um valor ótimo
+Feitas essas escolhas, executamos kNNdistplot e verificamos o valor de cotovelo, em que a rejeição 
 
 <!-- Fim da resposta -->
 
@@ -407,11 +429,11 @@ Descreva os experimentos feitos para a escolha dos parâmetros *eps* e *minPts*.
 Com base nas atividades anteriores, faça uma conclusão dos seus experimentos respondendo às seguintes perguntas: 
 
 a) Qual dos métodos apresentou melhores resultados? Justifique.
-
+K-means pois apesar do menor número de agrupamentos, foi possível interpretar leve separação, ainda que grosseira, em positivos e negativos, no caso de DBScan, praticamente todos os pontos eram agrupados em um único grupo independentemente do número de partiçoes.
 b) Quantos agrupamentos foram obtidos?
-
+Dois
 c) Analisando o campo `symboling` e o grupo designado para cada amostra, os agrupamentos conseguiram separar os níveis de risco?
-
+Não
 d) Analisando o campo `make` que contém as marcas dos carros, os agrupamentos conseguiram separar as marcas?
 
 
