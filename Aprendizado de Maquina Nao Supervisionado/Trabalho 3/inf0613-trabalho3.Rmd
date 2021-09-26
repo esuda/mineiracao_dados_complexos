@@ -104,15 +104,15 @@ set.seed (12345)
 # Tratamento de dados faltantes
 
 # Avaliacao do dataset
-summary(df)
-head(df)
+#summary(df)
+#head(df)
 
 # Avalaiacao dos valores unicos de cada coluna
-for(col in colnames(df)){
-  print(col)
-  print(unique(df[,col]))
-  print('\n')
-}
+#for(col in colnames(df)){
+#  print(col)
+#  print(unique(df[,col]))
+#  print('\n')
+#}
 
 #------------------------------------------------------------------------
 # Tratando "?" que apresenta nas bases para poder transformar em numerico
@@ -124,18 +124,18 @@ df$V22 <- as.numeric(gsub(pattern='[?]', replacement=NA, df$V22))
 df$V23 <- as.numeric(gsub(pattern='[?]', replacement=NA, df$V23))
 df$V26 <- as.numeric(gsub(pattern='[?]', replacement=NA, df$V26))
 
-unique(df$V6)
-unique(df$V18)
+#unique(df$V6)
+#unique(df$V18)
 
 #----------------------------------------
 # Data set de teste retirando todos os NA
 df2 <- na.omit(df)
-summary(df2)
+#summary(df2)
 #----------------------------------------
 
 # NA de V19 e V20 sao para a mesma marca mazda
-df[is.na(df$V19),]
-df[df$V3=='mazda',]
+#df[is.na(df$V19),]
+#df[df$V3=='mazda',]
 # Agrupando os valores para obter a m[edia de V19 e V20]
 linhas = df$V3=='mazda' & !is.na(df$V19)
 colunas = c('V3', 'V19', 'V20')
@@ -146,8 +146,8 @@ df[df$V3=='mazda' & is.na(df$V20),'V20'] = media_mazda$media_V20
 
 #----------------------------------------------------------------------------------------
 # Como temos apenas 2 carros da marca renault, vamos observar a distribuicao de V22 e V23
-df[is.na(df$V22),]
-df[df$V3=='renault',]
+#df[is.na(df$V22),]
+#df[df$V3=='renault',]
 
 # Distribuicoes nao normais e outliers, vamos pela mediana
 ggplot(df, aes(x=V22, y= ..density..)) +
@@ -166,9 +166,9 @@ df[df$V3=='renault' & is.na(df$V23),'V23'] = media_renault$mediana_V23
 
 #----------------------------------------
 # Verificacao dos veiculos com preco NA
-df[is.na(df$V26),]
+#df[is.na(df$V26),]
 # Marcas para verificar 'audi', 'isuzu', 'porsche'
-df[df$V3 %in% c('audi', 'isuzu', 'porsche'),]
+#df[df$V3 %in% c('audi', 'isuzu', 'porsche'),]
 
 #df[df$V3 %in% c('audi', 'isuzu', 'porsche') & !is.na(df$V26), c('V3', 'V26')] 
 #    %>% group_by(V3) 
@@ -185,7 +185,7 @@ for (marca in unique(median_marcas$V3)){
 #----------------------
 # Verificando coluna V2
 teste <- df[df$V3 %in% unique(df[is.na(df$V2),'V3']),]
-teste
+# teste
 
 # Para as marcas que possuem mais carros com V2 nao nulo, tiramos a media
 linhas <- df$V3 %in% unique(df[is.na(df$V2),'V3']) & !is.na(df$V2)
@@ -214,11 +214,11 @@ for (marca in unique(df[is.na(df$V2), 'V3'])) {
 # df <- na.omit(df, cols='V6')
 
 # Validacao do conteudo de cada coluna para ver se tratamos todos os casos de [?]
-for(col in colnames(df)){
-  print(col)
-  print(unique(df[,col]))
-  print('----------------------------')
-}
+# for(col in colnames(df)){
+#   print(col)
+#   print(unique(df[,col]))
+#   print('----------------------------')
+# }
 
 # Construindo um gráfico com as distâncias intra-cluster
 # colunas_porta = c("V2", "V10", "V11", "V12", "V13", "V14", "V17", "V19", "V20", "V21", "V22", "V23", "V24", "V25", "V26", "four")
@@ -239,8 +239,8 @@ df_normalized <- min_max(df,numericas)
 
 # df_normalized <- normalization(df, numericas)
 
-summary(df_normalized)
-colnames(df_normalized)
+# summary(df_normalized)
+# colnames(df_normalized)
 ```
 
 b) *Seleção de Atributos:* Atributos não-numéricos não podem ser usados com as técnicas  agrupamento vistas em aula. Portanto, você deve selecionar um conjunto de atributos numéricos que serão usados para o agrupamento. Além disso você deve analisar se os atributos não-numéricos são descritivos para a realização dos agrupamentos. Caso um dos atributos não numéricos seja necessário, use a técnica do  *one hot encoding* para transformá-lo em numérico. **Não** aplique essa técnica nos atributos `symboling` e `make` para os agrupamentos subsequentes, eles não devem fazer parte do agrupamento. 
@@ -286,7 +286,7 @@ numericas_reduzido <- c("V2", "V10", "V11", "V12", "V13", "V14", "V19", "V23", "
 
 # fviz_nbclust(nb) + theme_minimal()
 
-summary(df_normalized)
+# summary(df_normalized)
 
 ```
 
