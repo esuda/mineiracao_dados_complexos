@@ -15,7 +15,7 @@
 #------------------------------------------------------------------
 
 # setwd("/Users/nkuros/Documents/mineiracao_dados_complexos/Aprendizado de Maquina Supervisionado/")
-#rm(list = ls())
+# rm(list = ls())
 set.seed(42)
 
 #------------------------------------------------------------------
@@ -153,8 +153,10 @@ dataVal  <- data[-randomTrainValIndexes, ]
 dim(dataVal)
 # 4.3 - Verificando propor��o dos labels
 #train
+table(dataTrain$label)
 table(dataTrain$label)/length(dataTrain$label)
 #validation
+table(dataVal$label)
 table(dataVal$label)/length(dataVal$label)
 
 
@@ -217,18 +219,37 @@ table(data$country, data$label)
 #5.5 - Avalia��o do Baseline
 
 #5.5.1 - Cria��o das previs�es do modelo
-val_pred_baseline <- predict(treeModel_baseline, dataVal, type = "class")
-#5.5.1 - Matriz de confus�o 
+train_pred_baseline <- predict(treeModel_baseline, dataTrain, type = "class")
+
+
+#5.5.1 - Matriz de confus�o para o dataset de treinamento
+cm_baseline <- confusionMatrix(data = as.factor(train_pred_baseline), 
+                               reference = as.factor(dataTrain$label), 
+                               positive='forgery')
+cm_baseline
+
+#5.5.2 - Matriz de confus�o relativa para o dataset de treinamento
+cm_baseline_relative <- calculaMatrizConfusaoRelativa(cm_baseline)
+cm_baseline_relative
+
+#5.5.3 - Acur�cia Balanceada para o dataset de treinamento
+acc_baseline_balanceada <-calcula_acc_balanceada(cm_baseline_relative)
+acc_baseline_balanceada
+
+#5.5.1 - Cria��o das previs�es do modelo
+train_pred_baseline <- predict(treeModel_baseline, dataVal, type = "class")
+
+#5.5.1 - Matriz de confus�o para o dataset de validação
 cm_baseline <- confusionMatrix(data = as.factor(val_pred_baseline), 
                                reference = as.factor(dataVal$label), 
                                positive='forgery')
 cm_baseline
 
-#5.5.2 - Matriz de confus�o relativa
+#5.5.2 - Matriz de confus�o relativa para o dataset de validação
 cm_baseline_relative <- calculaMatrizConfusaoRelativa(cm_baseline)
 cm_baseline_relative
 
-#5.5.3 - Acur�cia Balanceada
+#5.5.3 - Acur�cia Balanceada para o dataset de validação
 acc_baseline_balanceada <-calcula_acc_balanceada(cm_baseline_relative)
 acc_baseline_balanceada
 
@@ -239,21 +260,19 @@ acc_baseline_balanceada
 #------------------------------------------------------------------
 
 #6.1 - Balanceamento por pesos 
-###### OBSERVACAO ULTRA IMPORTANTE
-###### VERIFICAR SE ESTA CORRETO O BALANCEAMENTO 
 
-#6.1.1 - Cria��o dos pesos
+#6.1.1 - Criação dos pesos
 
 label_frequency = table(dataTrain$label)
 label_frequency 
 relative_label_frequency =label_frequency/sum(label_frequency)
 relative_label_frequency
-#6.1.2 - Cria��o do vetor dos pesos
+#6.1.2 - Criação do vetor dos pesos
 weights <- rep(0.0, dim(dataTrain)[1])
 
-weight_dead = 1-relative_label_frequency[2]-relative_label_frequency[3]
-weight_onTreatment = 1-relative_label_frequency[1]-relative_label_frequency[3]
-weight_recovered = 1-relative_label_frequency[1]-relative_label_frequency[2]
+weight_dead = sum(label_frequency)/(3*label_frequency[1])
+weight_onTreatment = sum(label_frequency)/(3*label_frequency[2])
+weight_recovered = sum(label_frequency)/(3*label_frequency[3])
 
 weights[dataTrain$label == 'dead'] = weight_dead
 weights[dataTrain$label == 'onTreatment'] = weight_onTreatment
@@ -270,12 +289,13 @@ treeModel_w_baseline <- rpart(formula=label ~ .,
                                                     xval = 0),
                               parms= list(split="information"))
 
+#6.1.3 - Avaliacao dataset Treino
+evaluate_model_ret_acc_relative(treeModel_w_baseline, dataTrain)
+
+#6.1.4 - Avaliacao dataset Validacao
 evaluate_model_ret_acc_relative(treeModel_w_baseline, dataVal)
 
-
 #6.2 - Balanceamento por Undersampling
-###### OBSERVACAO ULTRA IMPORTANTE
-###### VERIFICAR SE ESTA CORRETO O BALANCEAMENTO 
 
 #6.2.1  - Verificando a menor quantidade dentre as labels
 table(dataTrain$label)
@@ -310,9 +330,11 @@ treeModel_undersampling_baseline <- rpart(formula=label ~ .,
                                                                 xval = 0),
                                           parms= list(split="information"))
 
+#6.1.5 - Avaliacao dataset de treino
+evaluate_model_ret_acc_relative(treeModel_undersampling_baseline, dataTrain)
+
+#6.1.5 - Avaliacao dataset de validacao
 evaluate_model_ret_acc_relative(treeModel_undersampling_baseline, dataVal)
-
-
 
 #------------------------------------------------------------------
 # 7- Varia��o do tamanho das �rvores
@@ -324,7 +346,7 @@ summary(accPerDepth)
 
 #for para treinar �rvores com tamanhos vari�dos (s� depth nesse caso)
 #utilizando base c/ undersampling
-for (maxDepth in 1:25){
+for (maxDepth in 1:30){
     treeModel <- rpart(formula=label ~ .,
                        data=subsetDataTrain,
                        method="class",
@@ -364,14 +386,23 @@ for (maxDepth in 1:25){
 accPerDepth <- melt(accPerDepth, id="depth")  # convert to long format
 ggplot(data=accPerDepth, aes(x=depth, y=value, colour=variable)) + geom_line() + geom_point()
 
-#nesse caso esta entre 6 e 7
+# Nesse caso esta entre 6 e 7
+# Treinando modelo para profundidade igual a 7 de acordo com melhor valor de acc balanceada de validacao
+# Avalaicao dos pontos plotados acima
+accPerDepth
+
+treeModel_max_depth <- rpart(formula=label ~ .,
+                    data=subsetDataTrain,
+                    method="class",
+                    control=rpart.control(minsplit=2,
+                                            cp=0.0, 
+                                            maxdepth=7,
+                                            xval = 0),
+                    parms= list(split="information"))
 
 #------------------------------------------------------------------
 # 8- Explora��o do Subconjunto de features
 #------------------------------------------------------------------
-
-#### ALGUEM FAZ UM FOR PRA FAZER UMA MISTURA DE VARIAVEIS *
-
 relative_importance
 #8.1 - Subset 1
 subset_1 = subsetDataTrain[, c('date_death_or_discharge',
@@ -434,33 +465,61 @@ treeModel_subset_3 <- rpart(formula=label ~ .,
 evaluate_model_ret_acc_relative(treeModel_subset_3, dataVal)
 
 ret_feature_importances(treeModel_subset_3)
+
+#------------------------------------------------------------------
+# 9- Rodando conjunto teste
+#------------------------------------------------------------------
+
 # Leitura da base de Teste. Descomentem as linhas abaixo quando o 
 # conjunto de teste estiver dispon�vel.
 
-#test_set <- read.csv("test_set_patient_status_covid19.csv", stringsAsFactors = T) # Descomentar
+test_set <- read.csv("test_set_patient_status_covid19.csv", stringsAsFactors = T) # Descomentar
 
 # As duas linhas abaixo s�o um trick para corrigir os "levels" na
 # coluna country. Ele apenas adiciona 1 exemplo de treino na primeira
 # linha do teste e depois retira-o para obter o test_set original. 
 # Nao se preocupem, eh apenas para nivelamento interno do R. 
 # Certifiquem-se de executar os comandos na seguinte ordem:
-# linha 38, linha 47 e linha 48 quando a base de teste estiver disponivel
+# linha 476, linha 485 e linha 486 quando a base de teste estiver disponivel
 
-#temporary_test <- rbind(train_val_set[1,], test_set) # Descomentar
-#test_set <- temporary_test[-1,] # Descomentar
+temporary_test <- rbind(data[1,], test_set)
+test_set <- temporary_test[-1,]
+dim(test_set)
+# 4.3 - Verificando propor��o dos labels
+#train
+table(test_set$label)
+table(test_set$label)/length(test_set$label)
+
+# Teste Baseline (Sem Balanceamento)
+evaluate_model_ret_acc_relative(treeModel_baseline, test_set)
+
+# Teste Baseline (Com Balanceamneto por Pesos)
+evaluate_model_ret_acc_relative(treeModel_w_baseline, test_set)
+
+# Teste Baseline (Com Undersampling)
+evaluate_model_ret_acc_relative(treeModel_undersampling_baseline, test_set)
+
+# Teste variação da profundidade máxima da árvore
+evaluate_model_ret_acc_relative(treeModel_max_depth, test_set)
+
+#Teste subconjunto de variáveis
+evaluate_model_ret_acc_relative(treeModel_subset_1, test_set)
 
 
 #------------------------------------------------------------------
-# 9- Florestas aleatórias
+# 10 - Florestas aleatórias
 #------------------------------------------------------------------
 
-#9.1 - teste com todas as features
+#10.1 - teste com todas as features
 nTreeList = c(1, 5, 10, 25, 50, 100, 250, 500, 1000)
 accPerNTrees <- data.frame(ntree=numeric(length(nTreeList)), 
                            accTrain=numeric(length(nTreeList)), 
                            accVal=numeric(length(nTreeList)))
 
 for (i in 1:length(nTreeList)){
+    
+    set.seed(42)
+    
     rfModel <- randomForest(formula=label ~ ., 
                             data= subsetDataTrain,
                             ntree=nTreeList[i],
@@ -495,7 +554,7 @@ accPerNTrees <- melt(accPerNTrees, id="ntree")  # convert to long format
 ggplot(data=accPerNTrees, aes(x=ntree, y=value, colour=variable)) + geom_line() + geom_point()
 
 
-#9.1 teste com features n2
+#10.1 teste com features n2
 
 nTreeList = c(1, 5, 10, 25, 50, 100, 250, 500, 1000)
 accPerNTrees <- data.frame(ntree=numeric(length(nTreeList)), 
@@ -504,6 +563,9 @@ accPerNTrees <- data.frame(ntree=numeric(length(nTreeList)),
 
 
 for (i in 1:length(nTreeList)){
+
+    set.seed(42)
+
     rfModel <- randomForest(formula=label ~ date_death_or_discharge+ age+
                                longitude+ latitude+ date_admission_hospital, 
                             data= subsetDataTrain,
@@ -538,7 +600,7 @@ accPerNTrees <- melt(accPerNTrees, id="ntree")  # convert to long format
 ggplot(data=accPerNTrees, aes(x=ntree, y=value, colour=variable)) + geom_line() + geom_point()
 
 
-#9.3 Melhorando intervalo de busca
+#10.2 Melhorando intervalo de busca
 
 nTreeList = c(1:100)
 accPerNTrees <- data.frame(ntree=numeric(length(nTreeList)), 
@@ -547,6 +609,9 @@ accPerNTrees <- data.frame(ntree=numeric(length(nTreeList)),
 
 
 for (i in 1:length(nTreeList)){
+
+    set.seed(42)
+
     rfModel <- randomForest(formula=label ~ ., 
                             data= subsetDataTrain,
                             ntree=nTreeList[i],
@@ -589,8 +654,8 @@ min_n_tree = min(accPerNTrees[(accPerNTrees['value'] == max_acc_validation) &
 #acho que tem alguma pergunta que toca nesse numero minimo
 print(min_n_tree)
 
-
-#9.4 Treinando floresta com melhor numero de arvores
+#10.3 Treinando floresta com melhor numero de arvores
+set.seed(42)
 
 treeForest_n3 <- randomForest(formula=label ~ ., 
                             data= subsetDataTrain,
@@ -599,17 +664,17 @@ treeForest_n3 <- randomForest(formula=label ~ .,
 
 
 
-#USAR ESSA FX para O TESTE
+#Validando
 evaluate_model_ret_acc_relative(treeForest_n3, dataVal)
-
-
+#Rodando no conjunto teste
+evaluate_model_ret_acc_relative(treeForest_n3, test_set)
 
 
 #------------------------------------------------------------------
-# 10- EXTRA
+# 11- EXTRA
 #------------------------------------------------------------------
 
-#10.1 Cria matriz com 0 do tamanho do DataVal
+#11.1 Cria matriz com 0 do tamanho do DataVal
 
 getRandomForestResults <- function(ntree, m, trainSet, valSet){
     
@@ -770,7 +835,6 @@ getRandomForestResults <- function(ntree, m, trainSet, valSet){
 
 
 #Rodando primeiro modelo , escolhendo m como sqrt
-
 m <- sqrt((ncol(dataTrain)))
 #valPredictedClasses <- getRandomForestResults(5, m, dataTrain, dataVal)
 df <- getRandomForestResults(75, m, dataTrain, dataVal)
@@ -785,22 +849,4 @@ df_2 <- getRandomForestResults(75, m, dataTrain, dataVal)
 m <- (ncol(dataTrain)*3)/4
 
 df_3 <- getRandomForestResults(75, m, dataTrain, dataVal)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

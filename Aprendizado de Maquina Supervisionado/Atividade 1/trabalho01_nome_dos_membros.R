@@ -33,7 +33,7 @@
 
 # Vejam os exerc?cios 02 e 03 para ver o funcionamento 
 # de uma funcao similar a essa.
-#setwd("/Users/nkuros/Documents/mineiracao_dados_complexos/Aprendizado de Maquina Supervisionado/Atividade 1/")
+# setwd("/Users/nkuros/Documents/mineiracao_dados_complexos/Aprendizado de Maquina Supervisionado/Atividade 1/")
 
 
 rm(list=ls())
