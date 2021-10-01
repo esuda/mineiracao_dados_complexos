@@ -237,7 +237,7 @@ acc_baseline_balanceada <-calcula_acc_balanceada(cm_baseline_relative)
 acc_baseline_balanceada
 
 #5.5.1 - Cria��o das previs�es do modelo
-train_pred_baseline <- predict(treeModel_baseline, dataVal, type = "class")
+val_pred_baseline <- predict(treeModel_baseline, dataVal, type = "class")
 
 #5.5.1 - Matriz de confus�o para o dataset de validação
 cm_baseline <- confusionMatrix(data = as.factor(val_pred_baseline), 
@@ -644,6 +644,7 @@ for (i in 1:length(nTreeList)){
 accPerNTrees <- melt(accPerNTrees, id="ntree")  # convert to long format
 ggplot(data=accPerNTrees, aes(x=ntree, y=value, colour=variable)) + geom_line() + geom_point()
 
+
 #ENCONTRAR MAIS FACIL E TREINAR COM MELHOR MODELO <---- VALIDAR***
 
 max_acc_validation = max(accPerNTrees[accPerNTrees$variable == 'accVal',]['value'])
@@ -710,7 +711,7 @@ getRandomForestResults <- function(ntree, m, trainSet, valSet){
   
   
     for(i in 1:ntree){
-    
+
         nsamples <- round(runif(1, min=0.85, max=1.0)*lowest_samples)
     
     # Seleciona, com reposiÃ§Ã£o (ja que o Bagging faz parte da Random Forest), 
@@ -749,7 +750,6 @@ getRandomForestResults <- function(ntree, m, trainSet, valSet){
         #validaÃ§Ã£o
         valPreds <- predict(treeModel, valSet, type = "class")
         valPredictedClasses[,i] <- valPreds 
-
     
     }
     
@@ -839,13 +839,13 @@ m <- sqrt((ncol(dataTrain)))
 #valPredictedClasses <- getRandomForestResults(5, m, dataTrain, dataVal)
 df <- getRandomForestResults(75, m, dataTrain, dataVal)
 
-# Variação do número de features
+# Variação do m
 m <- ncol(dataTrain)/2 
 
 df_2 <- getRandomForestResults(75, m, dataTrain, dataVal)
 
 
-#variação do número de feature* (na verdade é M)
+#variação do m
 m <- (ncol(dataTrain)*3)/4
 
 df_3 <- getRandomForestResults(75, m, dataTrain, dataVal)
