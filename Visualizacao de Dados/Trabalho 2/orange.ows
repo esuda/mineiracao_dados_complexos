@@ -15,6 +15,7 @@
 		<node id="11" name="MDS" position="(893.0, 315.0)" project_name="Orange3" qualified_name="Orange.widgets.unsupervised.owmds.OWMDS" title="MDS" version="" />
 		<node id="12" name="k-Means" position="(995.0, 511.0)" project_name="Orange3" qualified_name="Orange.widgets.unsupervised.owkmeans.OWKMeans" title="k-Means" version="" />
 		<node id="13" name="Scatter Plot" position="(1108.0, 509.0)" project_name="Orange3" qualified_name="Orange.widgets.visualize.owscatterplot.OWScatterPlot" title="Scatter Plot (1)" version="" />
+		<node id="14" name="Line Plot" position="(1095.0, 170.0)" project_name="Orange3" qualified_name="Orange.widgets.visualize.owlineplot.OWLinePlot" title="Line Plot" version="" />
 	</nodes>
 	<links>
 		<link enabled="true" id="0" sink_channel="Data" sink_node_id="1" source_channel="Data" source_node_id="0" />
@@ -30,6 +31,7 @@
 		<link enabled="true" id="10" sink_channel="Data" sink_node_id="11" source_channel="Data" source_node_id="7" />
 		<link enabled="true" id="11" sink_channel="Data" sink_node_id="13" source_channel="Data" source_node_id="12" />
 		<link enabled="true" id="12" sink_channel="Data" sink_node_id="12" source_channel="Transformed Data" source_node_id="10" />
+		<link enabled="true" id="13" sink_channel="Data" sink_node_id="14" source_channel="Data" source_node_id="7" />
 	</links>
 	<annotations />
 	<thumbnail />
@@ -179,8 +181,8 @@ bW5xVEsCWAgAAABTZWxlY3RlZHFVSwF1aDJ9cVYoWAYAAABTeW1ib2xxV0sDWBYAAABFbGVjdHJv
 biBDb25maWd1cmF0aW9ucVhLA3V1YmV1Lg==
 </properties>
 		<properties format="pickle" node_id="7">gAN9cQAoWAsAAABhdXRvX2NvbW1pdHEBiVgSAAAAY29udHJvbEFyZWFWaXNpYmxlcQKIWBMAAABz
-YXZlZFdpZGdldEdlb21ldHJ5cQNDMgHZ0MsAAgAAAAABgQAAA7cAAAPqAAAGPQAAAYoAAAPdAAAD
-4QAABjQAAAABAAAAAAeAcQRYEgAAAHVzZV9pbnB1dF9mZWF0dXJlc3EFiVgLAAAAX192ZXJzaW9u
+YXZlZFdpZGdldEdlb21ldHJ5cQNDMgHZ0MsAAgAAAAACiwAAALcAAAT0AAADPQAAApQAAADdAAAE
+6wAAAzQAAAAAAAAAAAeAcQRYEgAAAHVzZV9pbnB1dF9mZWF0dXJlc3EFiVgLAAAAX192ZXJzaW9u
 X19xBksBWBAAAABjb250ZXh0X3NldHRpbmdzcQddcQgoY29yYW5nZXdpZGdldC5zZXR0aW5ncwpD
 b250ZXh0CnEJKYFxCn1xCyhYBgAAAHZhbHVlc3EMfXENKFgRAAAAZG9tYWluX3JvbGVfaGludHNx
 Dn1xDyhYCAAAAFNlbGVjdGVkcRBLAYZxEVgJAAAAYXZhaWxhYmxlcRJLAIZxE1gGAAAAU3ltYm9s
@@ -334,8 +336,8 @@ ZXESiXVYCwAAAF9fdmVyc2lvbl9fcRNLBFgQAAAAY29udGV4dF9zZXR0aW5nc3EUXXEVKGNvcmFu
 Z2V3aWRnZXQuc2V0dGluZ3MKQ29udGV4dApxFimBcRd9cRgoWAYAAAB2YWx1ZXNxGX1xGihYCgAA
 AGF0dHJfY29sb3JxG1gHAAAAQ2x1c3RlcnEcS2WGcR1YCgAAAGF0dHJfbGFiZWxxHk5K/v///4Zx
 H1gKAAAAYXR0cl9zaGFwZXEgTkr+////hnEhWAkAAABhdHRyX3NpemVxIk5K/v///4ZxI1gGAAAA
-YXR0cl94cSRYAwAAAFBDMnElS2aGcSZYBgAAAGF0dHJfeXEnWAMAAABQQzRxKEtmhnEpaAh9cSpo
-E0sEdVgKAAAAYXR0cmlidXRlc3ErfXEsKFgDAAAAUEMxcS1LAmglSwJYAwAAAFBDM3EuSwJoKEsC
+YXR0cl94cSRYAwAAAFBDMXElS2aGcSZYBgAAAGF0dHJfeXEnWAMAAABQQzJxKEtmhnEpaAh9cSpo
+E0sEdVgKAAAAYXR0cmlidXRlc3ErfXEsKGglSwJoKEsCWAMAAABQQzNxLUsCWAMAAABQQzRxLksC
 WAMAAABQQzVxL0sCWAQAAABUeXBlcTBLAVgFAAAAUGhhc2VxMUsBdVgFAAAAbWV0YXNxMn1xMyho
 HEsBWAoAAABTaWxob3VldHRlcTRLAnV1YmgWKYFxNX1xNihoGX1xNyhYCgAAAGF0dHJfY29sb3Jx
 OFgEAAAAVHlwZXE5S2WGcTpYCgAAAGF0dHJfbGFiZWxxO05K/v///4ZxPFgKAAAAYXR0cl9zaGFw
@@ -349,6 +351,18 @@ AABBdG9taWMgV2VpZ2h0cV1LAlgNAAAAQXRvbWljIFJhZGl1c3FeSwJYEQAAAEVsZWN0cm9uZWdh
 dGl2aXR5cV9LAlgaAAAARmlyc3QgSW9uaXphdGlvbiBQb3RlbnRpYWxxYEsCWBEAAABNZWx0aW5n
 IFBvaW50IChLKXFhSwJYBwAAAERlbnNpdHlxYksCWAgAAABJc290b3Blc3FjSwJoOUsBaE1LAXVo
 Mn1xZChoSksCaEJLAmhLSwJoRUsCaExLAmhPSwFoUEsCdXViZXUu
+</properties>
+		<properties format="pickle" node_id="14">gAN9cQAoWAsAAABhdXRvX2NvbW1pdHEBiFgSAAAAY29udHJvbEFyZWFWaXNpYmxlcQKIWBMAAABz
+YXZlZFdpZGdldEdlb21ldHJ5cQNDMgHZ0MsAAgAAAAAA6AAAA+MAAASDAAAGEQAAAPEAAAQJAAAE
+egAABggAAAABAAAAAAeAcQRYCQAAAHNlbGVjdGlvbnEFTlgKAAAAc2hvd19lcnJvcnEGiVgJAAAA
+c2hvd19tZWFucQeIWA0AAABzaG93X3Byb2ZpbGVzcQiJWAoAAABzaG93X3JhbmdlcQmIWAsAAABf
+X3ZlcnNpb25fX3EKSwFYEAAAAGNvbnRleHRfc2V0dGluZ3NxC11xDGNvcmFuZ2V3aWRnZXQuc2V0
+dGluZ3MKQ29udGV4dApxDSmBcQ59cQ8oWAYAAAB2YWx1ZXNxEH1xEShYCQAAAGdyb3VwX3ZhcnES
+WAQAAABUeXBlcRNLZYZxFGgKSwF1WAoAAABhdHRyaWJ1dGVzcRV9cRYoWAwAAABJb25pYyBSYWRp
+dXNxF0sCWA0AAABBdG9taWMgV2VpZ2h0cRhLAlgNAAAAQXRvbWljIFJhZGl1c3EZSwJYEQAAAEVs
+ZWN0cm9uZWdhdGl2aXR5cRpLAlgaAAAARmlyc3QgSW9uaXphdGlvbiBQb3RlbnRpYWxxG0sCWBEA
+AABNZWx0aW5nIFBvaW50IChLKXEcSwJYBwAAAERlbnNpdHlxHUsCWAgAAABJc290b3Blc3EeSwJo
+E0sBWAUAAABQaGFzZXEfSwF1WAUAAABtZXRhc3EgfXEhdWJhdS4=
 </properties>
 	</node_properties>
 	<session_state>
